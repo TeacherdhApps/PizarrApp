@@ -20,6 +20,8 @@ export interface FichaJugadorProps {
   onDelete?: (numero: number) => void;
   /** Called when the player name is edited */
   onNameChange?: (newName: string) => void;
+  /** Whether we are in mobile layout (vertical pitch) */
+  isMobile?: boolean;
 }
 
 /**
@@ -39,6 +41,7 @@ export default function FichaJugador({
   onDragEnd,
   onDelete,
   onNameChange,
+  isMobile = false,
 }: FichaJugadorProps) {
   const [isDragging, setIsDragging] = useState(false);
   const [hovered, setHovered] = useState(false);
@@ -85,8 +88,8 @@ export default function FichaJugador({
       <div
         className="relative"
         style={{
-          width: 'clamp(34px, 4vw, 56px)',
-          height: 'clamp(36px, 4.2vw, 58px)',
+          width: isMobile ? 'clamp(30px, 8vw, 44px)' : 'clamp(34px, 4vw, 56px)',
+          height: isMobile ? 'clamp(32px, 8.5vw, 46px)' : 'clamp(36px, 4.2vw, 58px)',
           filter: 'drop-shadow(0 2px 5px rgba(0,0,0,0.4))',
         }}
       >
@@ -187,7 +190,7 @@ export default function FichaJugador({
             setEditing(true);
           }}
           className="font-semibold text-white text-center leading-tight whitespace-nowrap drop-shadow-md cursor-pointer"
-          style={{ fontSize: 'clamp(7px, 0.8vw, 11px)' }}
+          style={{ fontSize: isMobile ? 'clamp(7px, 2.2vw, 10px)' : 'clamp(7px, 0.8vw, 11px)' }}
         >
           {nombre}
         </span>

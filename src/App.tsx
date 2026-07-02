@@ -220,6 +220,15 @@ function App() {
     }
   }
 
+  /* ── Mobile detection ────────────────────────────────────────────── */
+  const [isMobile, setIsMobile] = useState(() => window.innerWidth <= 768)
+  useEffect(() => {
+    const mq = window.matchMedia('(max-width: 768px)')
+    const handler = (e: MediaQueryListEvent) => setIsMobile(e.matches)
+    mq.addEventListener('change', handler)
+    return () => mq.removeEventListener('change', handler)
+  }, [])
+
   /* Feedback toast state */
   const [toast, setToast] = useState<string | null>(null)
   const toastTimer = useRef<ReturnType<typeof setTimeout>>(null)
@@ -821,7 +830,7 @@ function App() {
           setColorVisitante(data.colorVisitante)
           setElements(deepClone(data.elements))
           setArrows(deepClone(data.arrows))
-          setResetKey((k) => k + 1) // Reset drag offsets
+          setResetKey((k) => k + 1)
           if (data.tacticName && typeof data.tacticName === 'string') {
             setTacticName(data.tacticName)
             localStorage.setItem('pizarra_tactica_name', data.tacticName)
@@ -837,11 +846,353 @@ function App() {
     reader.readAsText(file)
   }
 
+  /* ── Shared field content (used in both mobile and desktop) ─────── */
+  const fieldContent = (
+    <Cancha ref={canchaRef}>
+      {arrows.map((arr) => (
+        <InteractiveArrow
+          key={`arrow-${arr.id}-${resetKey}`}
+          arrow={arr}
+          constraintsRef={canchaRef}
+          onUpdate={handleArrowUpdate}
+          onDelete={handleArrowDelete}
+          onScaleChange={handleArrowScaleChange}
+        />
+      ))}
+      {elements.map((el) => (
+        <DraggableElement
+          key={`element-${el.id}-${resetKey}`}
+          element={el}
+          constraintsRef={canchaRef}
+          onDragEnd={handleElementDragEnd}
+          onDelete={handleElementDelete}
+          onTextChange={handleElementTextChange}
+          onScaleChange={handleElementScaleChange}
+        />
+      ))}
+      {local.map((j) => (
+        <FichaJugador
+          key={`local-${j.numero}-${resetKey}`}
+          numero={j.numero}
+          nombre={j.nombre}
+          color={colorLocal}
+          x={j.x}
+          y={j.y}
+          constraintsRef={canchaRef}
+          onDragEnd={handleLocalDragEnd(j.numero)}
+          onDelete={handleDeleteLocalPlayer}
+          onNameChange={(newName) => handleLocalNameChange(j.numero, newName)}
+          isMobile={isMobile}
+        />
+      ))}
+      {visitante.map((j) => (
+        <FichaJugador
+          key={`visit-${j.numero}-${resetKey}`}
+          numero={j.numero}
+          nombre={j.nombre}
+          color={colorVisitante}
+          x={j.x}
+          y={j.y}
+          constraintsRef={canchaRef}
+          onDragEnd={handleVisitanteDragEnd(j.numero)}
+          onDelete={handleDeleteVisitantePlayer}
+          onNameChange={(newName) => handleVisitanteNameChange(j.numero, newName)}
+          isMobile={isMobile}
+        />
+      ))}
+    </Cancha>
+  )
+
+  /* ── Shared team-config popover content ─────────────────────────── */
+  const teamConfigContent = (
+    <div className="space-y-4">
+      {/* LOCAL TEAM PANEL */}
+      <div className="space-y-2 pb-3 border-b border-white/5">
+        <div className="flex items-center justify-between">
+          <span className="text-xs font-bold text-blue-400 flex items-center gap-1.5">
+            <span className="w-2.5 h-2.5 rounded-full border border-white/10" style={{ backgroundColor: colorLocal }} />
+            Local
+          </span>
+          <span className="text-[10px] text-text-muted font-medium">{local.length} jugadores</span>
+        </div>
+        <div className="flex items-center justify-between gap-3">
+          <div className="flex rounded-lg bg-surface-800 p-0.5 border border-border/50">
+            {([7, 9, 11] as const).map((sz) => (
+              <button
+                key={`local-sz-${sz}`}
+                onClick={() => {
+                  setLocal(deepClone(sz === 7 ? formacion7Local : sz === 9 ? formacion9Local : formacionLocal))
+                  setResetKey((k) => k + 1)
+                  showToast(`Local: Fútbol ${sz}`)
+                }}
+                className="px-2 py-0.5 text-[10px] font-semibold rounded-md transition-all duration-150 cursor-pointer"
+                style={{
+                  backgroundColor: local.length === sz ? 'var(--color-surface-600)' : 'transparent',
+                  color: local.length === sz ? 'var(--color-text-primary)' : 'var(--color-text-secondary)'
+                }}
+              >
+                F{sz}
+              </button>
+            ))}
+          </div>
+          <label className="flex items-center justify-center w-7 h-7 rounded-lg bg-surface-800 hover:bg-surface-600 border border-border transition-colors cursor-pointer" title="Color de camiseta local">
+            <svg viewBox="0 0 64 68" fill="none" className="w-4 h-4" style={{ filter: 'drop-shadow(0 1px 2px rgba(0,0,0,0.25))' }}>
+              <path d="M22 4 C24 2, 40 2, 42 4 L48 3 L56 14 L56 24 L48 21 L48 62 C48 64, 46 66, 44 66 L20 66 C18 66, 16 64, 16 62 L16 21 L8 24 L8 14 L16 3 Z" fill={colorLocal} stroke="rgba(255,255,255,0.5)" strokeWidth="1.5" />
+            </svg>
+            <input type="color" value={colorLocal} onChange={(e) => setColorLocal(e.target.value)} className="sr-only" />
+          </label>
+          <div className="flex items-center gap-0.5">
+            <button
+              onClick={() => {
+                const num = getNextUnusedNumber(local)
+                setLocal((prev) => [...prev, { numero: num, nombre: `Jugador ${num}`, x: 25, y: 50 }])
+                showToast(`+ Jugador local ${num}`)
+              }}
+              className="w-7 h-7 flex items-center justify-center rounded-lg bg-blue-600/10 text-blue-400 border border-blue-500/20 hover:bg-blue-600/20 transition-colors cursor-pointer"
+              title="Añadir jugador local"
+            >
+              <Plus size={13} strokeWidth={2.5} />
+            </button>
+            <button
+              onClick={() => {
+                if (local.length > 0) {
+                  const lastPlayer = local[local.length - 1]
+                  setLocal((prev) => prev.filter((p) => p.numero !== lastPlayer.numero))
+                  showToast(`- Jugador local ${lastPlayer.numero}`)
+                }
+              }}
+              className="w-7 h-7 flex items-center justify-center rounded-lg bg-red-600/10 text-red-400 border border-red-500/20 hover:bg-red-600/20 transition-colors cursor-pointer disabled:opacity-40"
+              title="Eliminar último jugador local" disabled={local.length === 0}
+            >
+              <Minus size={13} strokeWidth={2.5} />
+            </button>
+          </div>
+        </div>
+      </div>
+      {/* VISITANTE TEAM PANEL */}
+      <div className="space-y-2">
+        <div className="flex items-center justify-between">
+          <span className="text-xs font-bold text-red-400 flex items-center gap-1.5">
+            <span className="w-2.5 h-2.5 rounded-full border border-white/10" style={{ backgroundColor: colorVisitante }} />
+            Visitante
+          </span>
+          <span className="text-[10px] text-text-muted font-medium">{visitante.length} jugadores</span>
+        </div>
+        <div className="flex items-center justify-between gap-3">
+          <div className="flex rounded-lg bg-surface-800 p-0.5 border border-border/50">
+            {([7, 9, 11] as const).map((sz) => (
+              <button
+                key={`visitante-sz-${sz}`}
+                onClick={() => {
+                  setVisitante(deepClone(sz === 7 ? formacion7Visitante : sz === 9 ? formacion9Visitante : formacionVisitante))
+                  setResetKey((k) => k + 1)
+                  showToast(`Visitante: Fútbol ${sz}`)
+                }}
+                className="px-2 py-0.5 text-[10px] font-semibold rounded-md transition-all duration-150 cursor-pointer"
+                style={{
+                  backgroundColor: visitante.length === sz ? 'var(--color-surface-600)' : 'transparent',
+                  color: visitante.length === sz ? 'var(--color-text-primary)' : 'var(--color-text-secondary)'
+                }}
+              >
+                F{sz}
+              </button>
+            ))}
+          </div>
+          <label className="flex items-center justify-center w-7 h-7 rounded-lg bg-surface-800 hover:bg-surface-600 border border-border transition-colors cursor-pointer" title="Color de camiseta visitante">
+            <svg viewBox="0 0 64 68" fill="none" className="w-4 h-4" style={{ filter: 'drop-shadow(0 1px 2px rgba(0,0,0,0.25))' }}>
+              <path d="M22 4 C24 2, 40 2, 42 4 L48 3 L56 14 L56 24 L48 21 L48 62 C48 64, 46 66, 44 66 L20 66 C18 66, 16 64, 16 62 L16 21 L8 24 L8 14 L16 3 Z" fill={colorVisitante} stroke="rgba(255,255,255,0.5)" strokeWidth="1.5" />
+            </svg>
+            <input type="color" value={colorVisitante} onChange={(e) => setColorVisitante(e.target.value)} className="sr-only" />
+          </label>
+          <div className="flex items-center gap-0.5">
+            <button
+              onClick={() => {
+                const num = getNextUnusedNumber(visitante)
+                setVisitante((prev) => [...prev, { numero: num, nombre: `Jugador ${num}`, x: 75, y: 50 }])
+                showToast(`+ Jugador visitante ${num}`)
+              }}
+              className="w-7 h-7 flex items-center justify-center rounded-lg bg-blue-600/10 text-blue-400 border border-blue-500/20 hover:bg-blue-600/20 transition-colors cursor-pointer"
+              title="Añadir jugador visitante"
+            >
+              <Plus size={13} strokeWidth={2.5} />
+            </button>
+            <button
+              onClick={() => {
+                if (visitante.length > 0) {
+                  const lastPlayer = visitante[visitante.length - 1]
+                  setVisitante((prev) => prev.filter((p) => p.numero !== lastPlayer.numero))
+                  showToast(`- Jugador visitante ${lastPlayer.numero}`)
+                }
+              }}
+              className="w-7 h-7 flex items-center justify-center rounded-lg bg-red-600/10 text-red-400 border border-red-500/20 hover:bg-red-600/20 transition-colors cursor-pointer disabled:opacity-40"
+              title="Eliminar último jugador visitante" disabled={visitante.length === 0}
+            >
+              <Minus size={13} strokeWidth={2.5} />
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+
+  /* ── Shared export dropdown content ─────────────────────────────── */
+  const exportContent = (
+    <>
+      <button onClick={() => { setIsExportOpen(false); exportWhiteboardAsImage() }} className="w-full text-left px-3 py-2 rounded-lg text-xs font-medium text-text-primary hover:bg-surface-600 transition-colors flex items-center gap-2 cursor-pointer">
+        <Image size={14} className="text-emerald-400" /> Exportar PNG
+      </button>
+      <button onClick={() => { setIsExportOpen(false); exportWhiteboardAsJson() }} className="w-full text-left px-3 py-2 rounded-lg text-xs font-medium text-text-primary hover:bg-surface-600 transition-colors flex items-center gap-2 cursor-pointer">
+        <FileJson size={14} className="text-blue-400" /> Exportar JSON
+      </button>
+      <button onClick={() => { setIsExportOpen(false); exportWhiteboardAsPdf() }} className="w-full text-left px-3 py-2 rounded-lg text-xs font-medium text-text-primary hover:bg-surface-600 transition-colors flex items-center gap-2 cursor-pointer">
+        <FileText size={14} className="text-rose-400" /> Exportar PDF
+      </button>
+      <div className="h-px bg-white/5 my-1" />
+      <button onClick={() => { setIsExportOpen(false); fileInputRef.current?.click() }} className="w-full text-left px-3 py-2 rounded-lg text-xs font-medium text-text-primary hover:bg-surface-600 transition-colors flex items-center gap-2 cursor-pointer">
+        <UploadIcon size={14} className="text-violet-400" /> Importar JSON
+      </button>
+    </>
+  )
+
+  /* ── Shared share popover content ───────────────────────────────── */
+  const shareContent = (
+    <>
+      <h3 className="text-xs font-bold text-text-primary flex items-center gap-1.5 mb-1">
+        <Link2 size={13} className="text-emerald-400" /> Compartir Táctica
+      </h3>
+      <p className="text-[10px] text-text-muted mb-3 leading-relaxed">
+        Copia este enlace para guardar o compartir tu táctica.
+      </p>
+      <div className="flex items-center gap-1.5">
+        <input readOnly value={shareUrl} onClick={(e) => (e.target as HTMLInputElement).select()}
+          className="flex-1 min-w-0 px-2.5 py-1.5 rounded-lg bg-surface-900/80 text-[11px] text-text-secondary border border-border font-mono truncate outline-none focus:ring-1 focus:ring-emerald-500/30" />
+        <button onClick={copyShareLink}
+          className={`flex items-center justify-center w-8 h-8 rounded-lg border transition-all duration-150 cursor-pointer active:scale-90 shrink-0 ${
+            isCopied ? 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30' : 'bg-surface-600 text-text-secondary hover:text-text-primary border-border hover:bg-surface-500'
+          }`} title="Copiar enlace">
+          {isCopied ? <Check size={14} /> : <Copy size={14} />}
+        </button>
+      </div>
+    </>
+  )
+
+  const hiddenFileInput = (
+    <input type="file" ref={fileInputRef} onChange={importarTactica} accept=".json" className="hidden" />
+  )
+
+  if (isMobile) {
+    return (
+      <div className="flex flex-col h-dvh overflow-hidden bg-surface-900">
+        <main className="flex-1 flex items-center justify-center p-2 overflow-hidden">
+          <div
+            ref={fieldContainerRef}
+            className={`relative rounded-xl overflow-hidden border border-border shadow-2xl shadow-black/40 ${
+              isFullscreen ? 'w-full h-full' : 'pitch-container-mobile'
+            }`}
+          >
+            {fieldContent}
+            <button
+              onClick={toggleFullscreen}
+              className={`absolute z-30 flex items-center justify-center rounded-lg
+                         bg-black/50 hover:bg-black/70 text-white/80 hover:text-white
+                         border border-white/10 hover:border-white/25
+                         backdrop-blur-sm transition-all duration-200 cursor-pointer active:scale-90 ${
+                           isFullscreen ? 'top-3 right-3 w-10 h-10' : 'top-2 right-2 w-8 h-8'
+                         }`}
+              title={isFullscreen ? 'Salir de pantalla completa' : 'Pantalla completa'}
+            >
+              {isFullscreen ? <Minimize size={18} /> : <Maximize size={14} />}
+            </button>
+          </div>
+        </main>
+        <nav className="shrink-0 bg-surface-800/90 backdrop-blur-md border-t border-white/5 px-2 py-2 safe-area-pb select-none" style={{ paddingBottom: 'max(0.5rem, env(safe-area-inset-bottom))' }}>
+          <div className="flex items-center justify-around gap-1">
+            <div className="flex items-center bg-surface-900/50 p-1 rounded-xl border border-border">
+              <Toolbar onAdd={handleAddTool} onClearExtras={clearExtras} className="border-none p-0" />
+            </div>
+            <div className="relative">
+              <button
+                onClick={() => { setIsTeamConfigOpen(!isTeamConfigOpen); setIsExportOpen(false); setIsShareOpen(false) }}
+                className={`flex items-center justify-center w-10 h-10 rounded-xl border transition-all cursor-pointer active:scale-90 ${
+                  isTeamConfigOpen
+                    ? 'bg-accent-500/20 text-accent-400 border-accent-500/30'
+                    : 'bg-surface-700/60 text-text-secondary border-border'
+                }`}
+                title="Alineaciones"
+              >
+                <Users size={18} />
+              </button>
+              {isTeamConfigOpen && (
+                <>
+                  <div className="fixed inset-0 z-10" onClick={() => setIsTeamConfigOpen(false)} />
+                  <div className="popover-mobile rounded-xl border border-border bg-surface-700 p-4 shadow-2xl z-20 animate-in fade-in slide-in-from-bottom-2 duration-150">
+                    <h3 className="text-[10px] font-bold uppercase tracking-wider text-text-secondary mb-3 flex items-center gap-1.5">
+                      <Users size={12} /> Alineaciones y Equipos
+                    </h3>
+                    {teamConfigContent}
+                  </div>
+                </>
+              )}
+            </div>
+            <button onClick={guardarTactica} className="flex items-center justify-center w-10 h-10 rounded-xl bg-accent-500/10 text-accent-400 border border-accent-500/20 transition-all cursor-pointer active:scale-90" title="Guardar">
+              <Save size={18} />
+            </button>
+            <button onClick={reiniciar} className="flex items-center justify-center w-10 h-10 rounded-xl bg-surface-700/60 text-text-secondary border border-border transition-all cursor-pointer active:scale-90" title="Reiniciar">
+              <RotateCcw size={18} />
+            </button>
+            <div className="relative">
+              <button
+                onClick={() => { setIsExportOpen(!isExportOpen); setIsTeamConfigOpen(false); setIsShareOpen(false) }}
+                className="flex items-center justify-center w-10 h-10 rounded-xl bg-blue-600/10 text-blue-400 border border-blue-500/20 transition-all cursor-pointer active:scale-90"
+                title="Exportar"
+              >
+                <Download size={18} />
+              </button>
+              {isExportOpen && (
+                <>
+                  <div className="fixed inset-0 z-10" onClick={() => setIsExportOpen(false)} />
+                  <div className="popover-mobile rounded-xl border border-border bg-surface-700 p-1.5 shadow-2xl z-20 animate-in fade-in slide-in-from-bottom-2 duration-150">
+                    {exportContent}
+                  </div>
+                </>
+              )}
+            </div>
+            <div className="relative">
+              <button
+                onClick={() => { generateShareLink(); setIsTeamConfigOpen(false); setIsExportOpen(false) }}
+                className="flex items-center justify-center w-10 h-10 rounded-xl bg-emerald-600/10 text-emerald-400 border border-emerald-500/20 transition-all cursor-pointer active:scale-90"
+                title="Compartir"
+              >
+                <Link2 size={18} />
+              </button>
+              {isShareOpen && (
+                <>
+                  <div className="fixed inset-0 z-10" onClick={() => setIsShareOpen(false)} />
+                  <div className="popover-mobile rounded-xl border border-border bg-surface-700 p-4 shadow-2xl z-20 animate-in fade-in slide-in-from-bottom-2 duration-150">
+                    {shareContent}
+                  </div>
+                </>
+              )}
+            </div>
+          </div>
+        </nav>
+        {hiddenFileInput}
+        <div
+          className={`fixed bottom-20 left-1/2 -translate-x-1/2 z-50
+                      px-4 py-2 rounded-xl text-sm font-medium
+                      bg-surface-700/95 text-text-primary border border-border
+                      shadow-xl backdrop-blur-sm transition-all duration-300
+                      ${toast ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4 pointer-events-none'}`}
+        >
+          {toast}
+        </div>
+      </div>
+    )
+  }
+
   return (
     <div className="flex flex-col min-h-dvh">
-      {/* ── Unified Sticky Top Bar (Pro App Redesign) ───────────────────────────────────── */}
       <header className="sticky top-0 z-50 flex items-center justify-between gap-4 px-6 py-2.5 bg-surface-800/60 backdrop-blur-md border-b border-white/5 shadow-[0_2px_15px_rgba(0,0,0,0.2)] select-none animate-in fade-in duration-300">
-        {/* Left: Brand/Logo & Title Input */}
         <div className="flex items-center gap-3">
           <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-accent-400 to-accent-600 flex items-center justify-center shadow-lg shadow-accent-500/25 shrink-0">
             <svg
@@ -881,15 +1232,10 @@ function App() {
             </span>
           </div>
         </div>
-
-        {/* Center: Floating Actions Toolbar */}
         <div className="flex items-center bg-surface-900/50 p-1 rounded-xl border border-border shadow-inner">
           <Toolbar onAdd={handleAddTool} onClearExtras={clearExtras} className="border-none p-0" />
         </div>
-
-        {/* Right: Popovers & Global Actions */}
         <div className="flex items-center gap-2">
-          {/* Team Configuration Popover */}
           <div className="relative">
             <button
               id="btn-equipos"
@@ -905,7 +1251,6 @@ function App() {
               <span className="hidden md:inline">Alineaciones</span>
               <ChevronDown size={13} className={`transition-transform duration-200 shrink-0 ${isTeamConfigOpen ? 'rotate-180' : ''}`} />
             </button>
-
             {isTeamConfigOpen && (
               <>
                 <div className="fixed inset-0 z-10" onClick={() => setIsTeamConfigOpen(false)} />
@@ -913,166 +1258,11 @@ function App() {
                   <h3 className="text-[10px] font-bold uppercase tracking-wider text-text-secondary mb-3 flex items-center gap-1.5">
                     <Users size={12} /> Alineaciones y Equipos
                   </h3>
-                  
-                  <div className="space-y-4">
-                    {/* LOCAL TEAM PANEL */}
-                    <div className="space-y-2 pb-3 border-b border-white/5">
-                      <div className="flex items-center justify-between">
-                        <span className="text-xs font-bold text-blue-400 flex items-center gap-1.5">
-                          <span className="w-2.5 h-2.5 rounded-full border border-white/10" style={{ backgroundColor: colorLocal }} />
-                          Local
-                        </span>
-                        <span className="text-[10px] text-text-muted font-medium">{local.length} jugadores</span>
-                      </div>
-                      
-                      <div className="flex items-center justify-between gap-3">
-                        {/* Formations Preset */}
-                        <div className="flex rounded-lg bg-surface-800 p-0.5 border border-border/50">
-                          {([7, 9, 11] as const).map((sz) => (
-                            <button
-                              key={`local-sz-${sz}`}
-                              onClick={() => {
-                                setLocal(deepClone(sz === 7 ? formacion7Local : sz === 9 ? formacion9Local : formacionLocal))
-                                setResetKey((k) => k + 1)
-                                showToast(`Local: Fútbol ${sz}`)
-                              }}
-                              className="px-2 py-0.5 text-[10px] font-semibold rounded-md transition-all duration-150 cursor-pointer"
-                              style={{
-                                backgroundColor: local.length === sz ? 'var(--color-surface-600)' : 'transparent',
-                                color: local.length === sz ? 'var(--color-text-primary)' : 'var(--color-text-secondary)'
-                              }}
-                            >
-                              F{sz}
-                            </button>
-                          ))}
-                        </div>
-
-                        {/* Shirt Color SVG Picker */}
-                        <label className="flex items-center justify-center w-7 h-7 rounded-lg bg-surface-800 hover:bg-surface-600 border border-border transition-colors cursor-pointer" title="Color de camiseta local">
-                          <svg viewBox="0 0 64 68" fill="none" className="w-4 h-4" style={{ filter: 'drop-shadow(0 1px 2px rgba(0,0,0,0.25))' }}>
-                            <path d="M22 4 C24 2, 40 2, 42 4 L48 3 L56 14 L56 24 L48 21 L48 62 C48 64, 46 66, 44 66 L20 66 C18 66, 16 64, 16 62 L16 21 L8 24 L8 14 L16 3 Z" fill={colorLocal} stroke="rgba(255,255,255,0.5)" strokeWidth="1.5" />
-                          </svg>
-                          <input
-                            type="color"
-                            value={colorLocal}
-                            onChange={(e) => setColorLocal(e.target.value)}
-                            className="sr-only"
-                          />
-                        </label>
-
-                        {/* Add/Remove player buttons */}
-                        <div className="flex items-center gap-0.5">
-                          <button
-                            onClick={() => {
-                              const num = getNextUnusedNumber(local)
-                              setLocal((prev) => [...prev, { numero: num, nombre: `Jugador ${num}`, x: 25, y: 50 }])
-                              showToast(`+ Jugador local ${num}`)
-                            }}
-                            className="w-7 h-7 flex items-center justify-center rounded-lg bg-blue-600/10 text-blue-400 border border-blue-500/20 hover:bg-blue-600/20 transition-colors cursor-pointer"
-                            title="Añadir jugador local"
-                          >
-                            <Plus size={13} strokeWidth={2.5} />
-                          </button>
-                          <button
-                            onClick={() => {
-                              if (local.length > 0) {
-                                const lastPlayer = local[local.length - 1]
-                                setLocal((prev) => prev.filter((p) => p.numero !== lastPlayer.numero))
-                                showToast(`- Jugador local ${lastPlayer.numero}`)
-                              }
-                            }}
-                            className="w-7 h-7 flex items-center justify-center rounded-lg bg-red-600/10 text-red-400 border border-red-500/20 hover:bg-red-600/20 transition-colors cursor-pointer disabled:opacity-40"
-                            title="Eliminar último jugador local"
-                            disabled={local.length === 0}
-                          >
-                            <Minus size={13} strokeWidth={2.5} />
-                          </button>
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* VISITANTE TEAM PANEL */}
-                    <div className="space-y-2">
-                      <div className="flex items-center justify-between">
-                        <span className="text-xs font-bold text-red-400 flex items-center gap-1.5">
-                          <span className="w-2.5 h-2.5 rounded-full border border-white/10" style={{ backgroundColor: colorVisitante }} />
-                          Visitante
-                        </span>
-                        <span className="text-[10px] text-text-muted font-medium">{visitante.length} jugadores</span>
-                      </div>
-                      
-                      <div className="flex items-center justify-between gap-3">
-                        {/* Formations Preset */}
-                        <div className="flex rounded-lg bg-surface-800 p-0.5 border border-border/50">
-                          {([7, 9, 11] as const).map((sz) => (
-                            <button
-                              key={`visitante-sz-${sz}`}
-                              onClick={() => {
-                                setVisitante(deepClone(sz === 7 ? formacion7Visitante : sz === 9 ? formacion9Visitante : formacionVisitante))
-                                setResetKey((k) => k + 1)
-                                showToast(`Visitante: Fútbol ${sz}`)
-                              }}
-                              className="px-2 py-0.5 text-[10px] font-semibold rounded-md transition-all duration-150 cursor-pointer"
-                              style={{
-                                backgroundColor: visitante.length === sz ? 'var(--color-surface-600)' : 'transparent',
-                                color: visitante.length === sz ? 'var(--color-text-primary)' : 'var(--color-text-secondary)'
-                              }}
-                            >
-                              F{sz}
-                            </button>
-                          ))}
-                        </div>
-
-                        {/* Shirt Color SVG Picker */}
-                        <label className="flex items-center justify-center w-7 h-7 rounded-lg bg-surface-800 hover:bg-surface-600 border border-border transition-colors cursor-pointer" title="Color de camiseta visitante">
-                          <svg viewBox="0 0 64 68" fill="none" className="w-4 h-4" style={{ filter: 'drop-shadow(0 1px 2px rgba(0,0,0,0.25))' }}>
-                            <path d="M22 4 C24 2, 40 2, 42 4 L48 3 L56 14 L56 24 L48 21 L48 62 C48 64, 46 66, 44 66 L20 66 C18 66, 16 64, 16 62 L16 21 L8 24 L8 14 L16 3 Z" fill={colorVisitante} stroke="rgba(255,255,255,0.5)" strokeWidth="1.5" />
-                          </svg>
-                          <input
-                            type="color"
-                            value={colorVisitante}
-                            onChange={(e) => setColorVisitante(e.target.value)}
-                            className="sr-only"
-                          />
-                        </label>
-
-                        {/* Add/Remove player buttons */}
-                        <div className="flex items-center gap-0.5">
-                          <button
-                            onClick={() => {
-                              const num = getNextUnusedNumber(visitante)
-                              setVisitante((prev) => [...prev, { numero: num, nombre: `Jugador ${num}`, x: 75, y: 50 }])
-                              showToast(`+ Jugador visitante ${num}`)
-                            }}
-                            className="w-7 h-7 flex items-center justify-center rounded-lg bg-blue-600/10 text-blue-400 border border-blue-500/20 hover:bg-blue-600/20 transition-colors cursor-pointer"
-                            title="Añadir jugador visitante"
-                          >
-                            <Plus size={13} strokeWidth={2.5} />
-                          </button>
-                          <button
-                            onClick={() => {
-                              if (visitante.length > 0) {
-                                const lastPlayer = visitante[visitante.length - 1]
-                                setVisitante((prev) => prev.filter((p) => p.numero !== lastPlayer.numero))
-                                showToast(`- Jugador visitante ${lastPlayer.numero}`)
-                              }
-                            }}
-                            className="w-7 h-7 flex items-center justify-center rounded-lg bg-red-600/10 text-red-400 border border-red-500/20 hover:bg-red-600/20 transition-colors cursor-pointer disabled:opacity-40"
-                            title="Eliminar último jugador visitante"
-                            disabled={visitante.length === 0}
-                          >
-                            <Minus size={13} strokeWidth={2.5} />
-                          </button>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
+                  {teamConfigContent}
                 </div>
               </>
             )}
           </div>
-
-          {/* Quick Save Action */}
           <button
             id="btn-guardar"
             onClick={guardarTactica}
@@ -1083,8 +1273,6 @@ function App() {
           >
             <Save size={15} />
           </button>
-
-          {/* Reset Action */}
           <button
             id="btn-reiniciar"
             onClick={reiniciar}
@@ -1095,8 +1283,6 @@ function App() {
           >
             <RotateCcw size={15} />
           </button>
-
-          {/* Export / Import Dropdown */}
           <div className="relative">
             <button
               id="btn-exportar"
@@ -1108,58 +1294,15 @@ function App() {
             >
               <Download size={15} />
             </button>
-
             {isExportOpen && (
               <>
                 <div className="fixed inset-0 z-10" onClick={() => setIsExportOpen(false)} />
                 <div className="absolute right-0 mt-2 w-48 rounded-xl border border-border bg-surface-700 p-1.5 shadow-2xl z-20 animate-in fade-in slide-in-from-top-1 duration-150">
-                  <button
-                    onClick={() => {
-                      setIsExportOpen(false)
-                      exportWhiteboardAsImage()
-                    }}
-                    className="w-full text-left px-3 py-2 rounded-lg text-xs font-medium text-text-primary hover:bg-surface-600 transition-colors flex items-center gap-2 cursor-pointer"
-                  >
-                    <Image size={14} className="text-emerald-400" />
-                    Exportar PNG
-                  </button>
-                  <button
-                    onClick={() => {
-                      setIsExportOpen(false)
-                      exportWhiteboardAsJson()
-                    }}
-                    className="w-full text-left px-3 py-2 rounded-lg text-xs font-medium text-text-primary hover:bg-surface-600 transition-colors flex items-center gap-2 cursor-pointer"
-                  >
-                    <FileJson size={14} className="text-blue-400" />
-                    Exportar JSON
-                  </button>
-                  <button
-                    onClick={() => {
-                      setIsExportOpen(false)
-                      exportWhiteboardAsPdf()
-                    }}
-                    className="w-full text-left px-3 py-2 rounded-lg text-xs font-medium text-text-primary hover:bg-surface-600 transition-colors flex items-center gap-2 cursor-pointer"
-                  >
-                    <FileText size={14} className="text-rose-400" />
-                    Exportar PDF
-                  </button>
-                  <div className="h-px bg-white/5 my-1" />
-                  <button
-                    onClick={() => {
-                      setIsExportOpen(false)
-                      fileInputRef.current?.click()
-                    }}
-                    className="w-full text-left px-3 py-2 rounded-lg text-xs font-medium text-text-primary hover:bg-surface-600 transition-colors flex items-center gap-2 cursor-pointer"
-                  >
-                    <UploadIcon size={14} className="text-violet-400" />
-                    Importar JSON
-                  </button>
+                  {exportContent}
                 </div>
               </>
             )}
           </div>
-
-          {/* Share / Link Button */}
           <div className="relative">
             <button
               id="btn-compartir"
@@ -1171,41 +1314,11 @@ function App() {
             >
               <Link2 size={15} />
             </button>
-
             {isShareOpen && (
               <>
                 <div className="fixed inset-0 z-10" onClick={() => setIsShareOpen(false)} />
                 <div className="absolute right-0 mt-2 w-[340px] rounded-xl border border-border bg-surface-700 p-4 shadow-2xl z-20 animate-in fade-in slide-in-from-top-1 duration-150 select-none">
-                  <h3 className="text-xs font-bold text-text-primary flex items-center gap-1.5 mb-1">
-                    <Link2 size={13} className="text-emerald-400" />
-                    Compartir Táctica
-                  </h3>
-                  <p className="text-[10px] text-text-muted mb-3 leading-relaxed">
-                    Copia este enlace para guardar o compartir tu táctica. Cualquier persona con el enlace podrá cargarla.
-                  </p>
-
-                  <div className="flex items-center gap-1.5">
-                    <input
-                      readOnly
-                      value={shareUrl}
-                      onClick={(e) => (e.target as HTMLInputElement).select()}
-                      className="flex-1 min-w-0 px-2.5 py-1.5 rounded-lg bg-surface-900/80 text-[11px] text-text-secondary
-                                 border border-border font-mono truncate outline-none
-                                 focus:ring-1 focus:ring-emerald-500/30 focus:border-emerald-500/30"
-                    />
-                    <button
-                      onClick={copyShareLink}
-                      className={`flex items-center justify-center w-8 h-8 rounded-lg border transition-all duration-150 cursor-pointer active:scale-90 shrink-0 ${
-                        isCopied
-                          ? 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30'
-                          : 'bg-surface-600 text-text-secondary hover:text-text-primary border-border hover:bg-surface-500'
-                      }`}
-                      title="Copiar enlace"
-                    >
-                      {isCopied ? <Check size={14} /> : <Copy size={14} />}
-                    </button>
-                  </div>
-
+                  {shareContent}
                   <div className="mt-3 pt-2.5 border-t border-white/5">
                     <p className="text-[10px] text-text-muted leading-relaxed">
                       <span className="font-semibold text-text-secondary">💡 Tip:</span>{' '}
@@ -1217,21 +1330,10 @@ function App() {
             )}
           </div>
         </div>
-
-        {/* Hidden File Input for Importing */}
-        <input
-          type="file"
-          ref={fileInputRef}
-          onChange={importarTactica}
-          accept=".json"
-          className="hidden"
-        />
+        {hiddenFileInput}
       </header>
-
-      {/* ── Main — 16:9 Play Area ──────────────────────────────────────── */}
       <main className="flex-1 flex items-center justify-center p-4 sm:p-6 lg:p-10">
         <div className="relative w-full max-w-6xl">
-          {/* 16:9 aspect ratio container */}
           <div
             ref={fieldContainerRef}
             className={`relative w-full rounded-2xl overflow-hidden border border-border shadow-2xl shadow-black/40 ${
@@ -1239,67 +1341,8 @@ function App() {
             }`}
           >
             <div className={isFullscreen ? 'w-full h-full' : 'contents'}>
-              <Cancha ref={canchaRef}>
-                {/* Interactive Lines / Arrows */}
-                {arrows.map((arr) => (
-                  <InteractiveArrow
-                    key={`arrow-${arr.id}-${resetKey}`}
-                    arrow={arr}
-                    constraintsRef={canchaRef}
-                    onUpdate={handleArrowUpdate}
-                    onDelete={handleArrowDelete}
-                    onScaleChange={handleArrowScaleChange}
-                  />
-                ))}
-
-                {/* Draggable Ball, Cone, Text Elements */}
-                {elements.map((el) => (
-                  <DraggableElement
-                    key={`element-${el.id}-${resetKey}`}
-                    element={el}
-                    constraintsRef={canchaRef}
-                    onDragEnd={handleElementDragEnd}
-                    onDelete={handleElementDelete}
-                    onTextChange={handleElementTextChange}
-                    onScaleChange={handleElementScaleChange}
-                  />
-                ))}
-
-                {/* Equipo Local */}
-                {local.map((j) => (
-                  <FichaJugador
-                    key={`local-${j.numero}-${resetKey}`}
-                    numero={j.numero}
-                    nombre={j.nombre}
-                    color={colorLocal}
-                    x={j.x}
-                    y={j.y}
-                    constraintsRef={canchaRef}
-                    onDragEnd={handleLocalDragEnd(j.numero)}
-                    onDelete={handleDeleteLocalPlayer}
-                    onNameChange={(newName) => handleLocalNameChange(j.numero, newName)}
-                  />
-                ))}
-
-                {/* Equipo Visitante */}
-                {visitante.map((j) => (
-                  <FichaJugador
-                    key={`visit-${j.numero}-${resetKey}`}
-                    numero={j.numero}
-                    nombre={j.nombre}
-                    color={colorVisitante}
-                    x={j.x}
-                    y={j.y}
-                    constraintsRef={canchaRef}
-                    onDragEnd={handleVisitanteDragEnd(j.numero)}
-                    onDelete={handleDeleteVisitantePlayer}
-                    onNameChange={(newName) => handleVisitanteNameChange(j.numero, newName)}
-                  />
-                ))}
-              </Cancha>
+              {fieldContent}
             </div>
-
-            {/* ── Fullscreen toggle button ─────────────────────────────── */}
             <button
               onClick={toggleFullscreen}
               className={`absolute z-30 flex items-center justify-center rounded-lg
