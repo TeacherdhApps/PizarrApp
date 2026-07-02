@@ -848,7 +848,7 @@ function App() {
 
   /* ── Shared field content (used in both mobile and desktop) ─────── */
   const fieldContent = (
-    <Cancha ref={canchaRef}>
+    <Cancha ref={canchaRef} isVertical={isMobile}>
       {arrows.map((arr) => (
         <InteractiveArrow
           key={`arrow-${arr.id}-${resetKey}`}

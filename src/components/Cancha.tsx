@@ -1,6 +1,7 @@
 /**
  * Cancha — A fully responsive CSS-only football field.
  *
+ * Supports both landscape (default) and portrait orientations.
  * All lines are drawn with CSS borders and absolute positioning using
  * percentage-based values so the field scales to any container size.
  *
@@ -39,23 +40,9 @@ function CornerArc({ position }: { position: 'tl' | 'tr' | 'bl' | 'br' }) {
   );
 }
 
-/* ── penalty arc (the "D") ────────────────────────────────────────────── */
-function PenaltyArc({ side }: { side: 'left' | 'right' }) {
+/* ── penalty arc (the "D") — landscape ────────────────────────────────── */
+function PenaltyArcH({ side }: { side: 'left' | 'right' }) {
   const isLeft = side === 'left';
-
-  /*
-   * Strategy: a clipping container flush with the penalty-area edge,
-   * spanning its full height. Inside, a circle whose center aligns
-   * horizontally with the penalty spot. Only the protruding sliver
-   * (the "D") is shown thanks to overflow-hidden.
-   *
-   * The penalty spot sits at 10.48 % from the goal line.
-   * The penalty area edge sits at 15.71 %.
-   * Offset between them: 15.71 − 10.48 = 5.23 % (≈ 5.5 m).
-   * Arc radius (9.15 m) as % of field length: 8.71 %.
-   * So the arc circle diameter = 17.43 % of the field boundary width,
-   * and the circle center is 5.23 % to the LEFT of the clip container.
-   */
   return (
     <div
       className={`absolute top-[14%] ${isLeft ? 'left-[15.71%]' : 'right-[15.71%]'} h-[72%] overflow-hidden pointer-events-none`}
@@ -67,9 +54,28 @@ function PenaltyArc({ side }: { side: 'left' | 'right' }) {
           width: '340%',
           aspectRatio: '1',
           transform: 'translateY(-50%)',
-          ...(isLeft
-            ? { right: '20%' }
-            : { left: '20%' }),
+          ...(isLeft ? { right: '20%' } : { left: '20%' }),
+        }}
+      />
+    </div>
+  );
+}
+
+/* ── penalty arc (the "D") — portrait ─────────────────────────────────── */
+function PenaltyArcV({ side }: { side: 'top' | 'bottom' }) {
+  const isTop = side === 'top';
+  return (
+    <div
+      className={`absolute left-[14%] ${isTop ? 'top-[15.71%]' : 'bottom-[15.71%]'} w-[72%] overflow-hidden pointer-events-none`}
+      style={{ height: '5%' }}
+    >
+      <div
+        className={`absolute left-1/2 rounded-full ${LINE_W} ${LINE}`}
+        style={{
+          height: '340%',
+          aspectRatio: '1',
+          transform: 'translateX(-50%)',
+          ...(isTop ? { bottom: '20%' } : { top: '20%' }),
         }}
       />
     </div>
@@ -82,10 +88,12 @@ import { forwardRef, type ReactNode } from 'react';
 
 interface CanchaProps {
   children?: ReactNode;
+  /** When true, draws the field in portrait orientation (goals at top/bottom) */
+  isVertical?: boolean;
 }
 
 const Cancha = forwardRef<HTMLDivElement, CanchaProps>(
-  function Cancha({ children }, ref) {
+  function Cancha({ children, isVertical = false }, ref) {
     return (
       <div
         ref={ref}
@@ -95,8 +103,9 @@ const Cancha = forwardRef<HTMLDivElement, CanchaProps>(
         <div
           className="absolute inset-0"
           style={{
-            background:
-              'linear-gradient(160deg, #2d8a4e 0%, #1b7a3a 30%, #28924a 55%, #1c6e38 80%, #2d8a4e 100%)',
+            background: isVertical
+              ? 'linear-gradient(250deg, #2d8a4e 0%, #1b7a3a 30%, #28924a 55%, #1c6e38 80%, #2d8a4e 100%)'
+              : 'linear-gradient(160deg, #2d8a4e 0%, #1b7a3a 30%, #28924a 55%, #1c6e38 80%, #2d8a4e 100%)',
           }}
         />
 
@@ -104,62 +113,122 @@ const Cancha = forwardRef<HTMLDivElement, CanchaProps>(
         <div
           className="absolute inset-0 pointer-events-none"
           style={{
-            background:
-              'repeating-linear-gradient(90deg, transparent 0%, transparent 8.33%, rgba(255,255,255,0.045) 8.33%, rgba(255,255,255,0.045) 16.66%)',
+            background: isVertical
+              ? 'repeating-linear-gradient(0deg, transparent 0%, transparent 8.33%, rgba(255,255,255,0.045) 8.33%, rgba(255,255,255,0.045) 16.66%)'
+              : 'repeating-linear-gradient(90deg, transparent 0%, transparent 8.33%, rgba(255,255,255,0.045) 8.33%, rgba(255,255,255,0.045) 16.66%)',
           }}
         />
 
         {/* ── Field boundary (touchlines + goal lines) ────────────────── */}
         <div className={`absolute inset-[4%] ${LINE_W} ${LINE}`}>
 
-          {/* ── Center line ───────────────────────────────────────────── */}
-          <div className="absolute top-0 bottom-0 left-1/2 -translate-x-px w-0.5 bg-white/75" />
+          {isVertical ? (
+            /* ═══════════════════════════════════════════════════════════
+             *  PORTRAIT / VERTICAL LAYOUT  (goals at top & bottom)
+             * ═══════════════════════════════════════════════════════════ */
+            <>
+              {/* Center line — horizontal */}
+              <div className="absolute left-0 right-0 top-1/2 -translate-y-px h-0.5 bg-white/75" />
 
-          {/* ── Center circle ─────────────────────────────────────────── */}
-          <div
-            className={`absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 h-[36%] aspect-square rounded-full ${LINE_W} ${LINE}`}
-          />
+              {/* Center circle */}
+              <div
+                className={`absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[36%] aspect-square rounded-full ${LINE_W} ${LINE}`}
+              />
 
-          {/* ── Center spot ───────────────────────────────────────────── */}
-          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[0.8%] aspect-square bg-white/90 rounded-full" />
+              {/* Center spot */}
+              <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 h-[0.8%] aspect-square bg-white/90 rounded-full" />
 
-          {/* ═══════════ LEFT HALF ═══════════ */}
+              {/* ═══ TOP HALF (goal at top) ═══ */}
 
-          {/* Penalty area (área grande) */}
-          <div
-            className={`absolute top-[20.35%] left-0 w-[15.71%] h-[59.29%] border-r-2 border-y-2 ${LINE}`}
-          />
+              {/* Penalty area */}
+              <div
+                className={`absolute left-[20.35%] top-0 h-[15.71%] w-[59.29%] border-b-2 border-x-2 ${LINE}`}
+              />
 
-          {/* Goal area (área chica) */}
-          <div
-            className={`absolute top-[36.53%] left-0 w-[5.24%] h-[26.94%] border-r-2 border-y-2 ${LINE}`}
-          />
+              {/* Goal area */}
+              <div
+                className={`absolute left-[36.53%] top-0 h-[5.24%] w-[26.94%] border-b-2 border-x-2 ${LINE}`}
+              />
 
-          {/* Penalty spot */}
-          <div className="absolute top-1/2 left-[10.48%] -translate-x-1/2 -translate-y-1/2 w-[0.6%] aspect-square bg-white/90 rounded-full" />
+              {/* Penalty spot */}
+              <div className="absolute left-1/2 top-[10.48%] -translate-x-1/2 -translate-y-1/2 h-[0.6%] aspect-square bg-white/90 rounded-full" />
 
-          {/* Penalty arc */}
-          <PenaltyArc side="left" />
+              {/* Penalty arc */}
+              <PenaltyArcV side="top" />
 
-          {/* ═══════════ RIGHT HALF ═══════════ */}
+              {/* ═══ BOTTOM HALF (goal at bottom) ═══ */}
 
-          {/* Penalty area (área grande) */}
-          <div
-            className={`absolute top-[20.35%] right-0 w-[15.71%] h-[59.29%] border-l-2 border-y-2 ${LINE}`}
-          />
+              {/* Penalty area */}
+              <div
+                className={`absolute left-[20.35%] bottom-0 h-[15.71%] w-[59.29%] border-t-2 border-x-2 ${LINE}`}
+              />
 
-          {/* Goal area (área chica) */}
-          <div
-            className={`absolute top-[36.53%] right-0 w-[5.24%] h-[26.94%] border-l-2 border-y-2 ${LINE}`}
-          />
+              {/* Goal area */}
+              <div
+                className={`absolute left-[36.53%] bottom-0 h-[5.24%] w-[26.94%] border-t-2 border-x-2 ${LINE}`}
+              />
 
-          {/* Penalty spot */}
-          <div className="absolute top-1/2 right-[10.48%] translate-x-1/2 -translate-y-1/2 w-[0.6%] aspect-square bg-white/90 rounded-full" />
+              {/* Penalty spot */}
+              <div className="absolute left-1/2 bottom-[10.48%] -translate-x-1/2 translate-y-1/2 h-[0.6%] aspect-square bg-white/90 rounded-full" />
 
-          {/* Penalty arc */}
-          <PenaltyArc side="right" />
+              {/* Penalty arc */}
+              <PenaltyArcV side="bottom" />
+            </>
+          ) : (
+            /* ═══════════════════════════════════════════════════════════
+             *  LANDSCAPE / HORIZONTAL LAYOUT (original, goals at left & right)
+             * ═══════════════════════════════════════════════════════════ */
+            <>
+              {/* Center line — vertical */}
+              <div className="absolute top-0 bottom-0 left-1/2 -translate-x-px w-0.5 bg-white/75" />
 
-          {/* ═══════════ CORNER ARCS ═══════════ */}
+              {/* Center circle */}
+              <div
+                className={`absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 h-[36%] aspect-square rounded-full ${LINE_W} ${LINE}`}
+              />
+
+              {/* Center spot */}
+              <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[0.8%] aspect-square bg-white/90 rounded-full" />
+
+              {/* ═══ LEFT HALF ═══ */}
+
+              {/* Penalty area */}
+              <div
+                className={`absolute top-[20.35%] left-0 w-[15.71%] h-[59.29%] border-r-2 border-y-2 ${LINE}`}
+              />
+
+              {/* Goal area */}
+              <div
+                className={`absolute top-[36.53%] left-0 w-[5.24%] h-[26.94%] border-r-2 border-y-2 ${LINE}`}
+              />
+
+              {/* Penalty spot */}
+              <div className="absolute top-1/2 left-[10.48%] -translate-x-1/2 -translate-y-1/2 w-[0.6%] aspect-square bg-white/90 rounded-full" />
+
+              {/* Penalty arc */}
+              <PenaltyArcH side="left" />
+
+              {/* ═══ RIGHT HALF ═══ */}
+
+              {/* Penalty area */}
+              <div
+                className={`absolute top-[20.35%] right-0 w-[15.71%] h-[59.29%] border-l-2 border-y-2 ${LINE}`}
+              />
+
+              {/* Goal area */}
+              <div
+                className={`absolute top-[36.53%] right-0 w-[5.24%] h-[26.94%] border-l-2 border-y-2 ${LINE}`}
+              />
+
+              {/* Penalty spot */}
+              <div className="absolute top-1/2 right-[10.48%] translate-x-1/2 -translate-y-1/2 w-[0.6%] aspect-square bg-white/90 rounded-full" />
+
+              {/* Penalty arc */}
+              <PenaltyArcH side="right" />
+            </>
+          )}
+
+          {/* ═══════════ CORNER ARCS (same for both orientations) ═══════════ */}
           <CornerArc position="tl" />
           <CornerArc position="tr" />
           <CornerArc position="bl" />
@@ -178,4 +247,3 @@ const Cancha = forwardRef<HTMLDivElement, CanchaProps>(
 );
 
 export default Cancha;
-
