@@ -54,15 +54,20 @@ export default function Toolbar({ onAdd, onClearExtras, isMobile = false }: Tool
     <div className="relative">
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg border text-xs font-semibold transition-all duration-150 cursor-pointer active:scale-95 ${
+        className={`flex items-center justify-center border transition-all duration-150 cursor-pointer active:scale-95 ${
+          isMobile
+            ? 'w-10 h-10 rounded-xl'
+            : 'gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold'
+        } ${
           isOpen
             ? 'bg-accent-500/20 text-accent-400 border-accent-500/30 shadow-[0_0_10px_rgba(99,102,241,0.15)]'
             : 'bg-surface-700/60 text-text-secondary hover:text-text-primary border-border hover:bg-surface-700'
         }`}
+        title="Extras"
       >
-        <Sparkles size={14} className="shrink-0 text-accent-400" />
-        <span>Extras</span>
-        <ChevronDown size={12} className={`transition-transform duration-200 shrink-0 ${isOpen ? 'rotate-180' : ''}`} />
+        <Sparkles size={isMobile ? 18 : 14} className="shrink-0 text-accent-400" />
+        {!isMobile && <span>Extras</span>}
+        {!isMobile && <ChevronDown size={12} className={`transition-transform duration-200 shrink-0 ${isOpen ? 'rotate-180' : ''}`} />}
       </button>
 
       {isOpen && (
