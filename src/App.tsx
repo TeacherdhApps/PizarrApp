@@ -6,7 +6,7 @@ import DraggableElement from './components/DraggableElement'
 import InteractiveArrow from './components/InteractiveArrow'
 import { uid, isValidTacticaGuardada } from './types'
 import type { Jugador, FieldElement, ArrowItem, TacticaGuardada, ElementType } from './types'
-import { Users, ChevronDown, Plus, Minus, Save, RotateCcw, Download, Image, FileJson, FileText, Upload as UploadIcon, Pencil, Link2, Copy, Check, Maximize, Minimize } from 'lucide-react'
+import { Users, ChevronDown, Plus, Minus, Save, RotateCcw, Download, Image, FileText, Pencil, Link2, Copy, Check, Maximize, Minimize } from 'lucide-react'
 
 const LS_KEY = 'pizarra-tactica'
 
@@ -168,7 +168,7 @@ function App() {
   // Export dropdown & Import file ref
   const [isExportOpen, setIsExportOpen] = useState(false)
   const [isTeamConfigOpen, setIsTeamConfigOpen] = useState(false)
-  const fileInputRef = useRef<HTMLInputElement>(null)
+
 
   // Share link state
   const [isShareOpen, setIsShareOpen] = useState(false)
@@ -453,8 +453,13 @@ function App() {
   /* ── Render tactic to canvas (shared by PNG & PDF exports) ────────── */
   const renderTacticToCanvas = (): HTMLCanvasElement | null => {
     const canvas = document.createElement('canvas')
-    canvas.width = 1600
-    canvas.height = 900
+    if (isMobile) {
+      canvas.width = 900
+      canvas.height = 1600
+    } else {
+      canvas.width = 1600
+      canvas.height = 900
+    }
     const ctx = canvas.getContext('2d')
     if (!ctx) return null
 
@@ -471,11 +476,18 @@ function App() {
     ctx.fillStyle = grad
     ctx.fillRect(0, 0, w, h)
 
-    // 2. Mowing stripes (12 vertical stripes)
+    // 2. Mowing stripes (12 stripes)
     ctx.fillStyle = 'rgba(255, 255, 255, 0.04)'
-    const stripeWidth = w / 12
-    for (let i = 0; i < 12; i += 2) {
-      ctx.fillRect(i * stripeWidth, 0, stripeWidth, h)
+    if (isMobile) {
+      const stripeHeight = h / 12
+      for (let i = 0; i < 12; i += 2) {
+        ctx.fillRect(0, i * stripeHeight, w, stripeHeight)
+      }
+    } else {
+      const stripeWidth = w / 12
+      for (let i = 0; i < 12; i += 2) {
+        ctx.fillRect(i * stripeWidth, 0, stripeWidth, h)
+      }
     }
 
     // 3. Pitch lines styling
@@ -493,77 +505,154 @@ function App() {
     // Outer border
     ctx.strokeRect(padX, padY, fieldW, fieldH)
 
-    // Center line
-    ctx.beginPath()
-    ctx.moveTo(w / 2, padY)
-    ctx.lineTo(w / 2, padY + fieldH)
-    ctx.stroke()
+    if (isMobile) {
+      // ═══════════════════════════════════════════════════════════
+      // PORTRAIT FIELD LINES DRAWING
+      // ═══════════════════════════════════════════════════════════
+      // Center line (horizontal)
+      ctx.beginPath()
+      ctx.moveTo(padX, h / 2)
+      ctx.lineTo(padX + fieldW, h / 2)
+      ctx.stroke()
 
-    // Center circle
-    const centerRadius = fieldH * 0.18
-    ctx.beginPath()
-    ctx.arc(w / 2, h / 2, centerRadius, 0, Math.PI * 2)
-    ctx.stroke()
+      // Center circle
+      const centerRadius = fieldW * 0.18
+      ctx.beginPath()
+      ctx.arc(w / 2, h / 2, centerRadius, 0, Math.PI * 2)
+      ctx.stroke()
 
-    // Center spot
-    ctx.fillStyle = 'rgba(255, 255, 255, 0.9)'
-    ctx.beginPath()
-    ctx.arc(w / 2, h / 2, w * 0.004, 0, Math.PI * 2)
-    ctx.fill()
+      // Center spot
+      ctx.fillStyle = 'rgba(255, 255, 255, 0.9)'
+      ctx.beginPath()
+      ctx.arc(w / 2, h / 2, w * 0.006, 0, Math.PI * 2)
+      ctx.fill()
 
-    // Left Penalty Area
-    const penAreaW = fieldW * 0.1571
-    const penAreaH = fieldH * 0.5929
-    const penAreaY = padY + fieldH * 0.2035
-    ctx.strokeRect(padX, penAreaY, penAreaW, penAreaH)
+      // Top Penalty Area
+      const penAreaW = fieldW * 0.5929
+      const penAreaH = fieldH * 0.1571
+      const penAreaX = padX + fieldW * 0.2035
+      ctx.strokeRect(penAreaX, padY, penAreaW, penAreaH)
 
-    // Left Goal Area
-    const goalAreaW = fieldW * 0.0524
-    const goalAreaH = fieldH * 0.2694
-    const goalAreaY = padY + fieldH * 0.3653
-    ctx.strokeRect(padX, goalAreaY, goalAreaW, goalAreaH)
+      // Top Goal Area
+      const goalAreaW = fieldW * 0.2694
+      const goalAreaH = fieldH * 0.0524
+      const goalAreaX = padX + fieldW * 0.3653
+      ctx.strokeRect(goalAreaX, padY, goalAreaW, goalAreaH)
 
-    // Left Penalty Spot
-    const leftPenSpotX = padX + fieldW * 0.1048
-    ctx.beginPath()
-    ctx.arc(leftPenSpotX, h / 2, w * 0.003, 0, Math.PI * 2)
-    ctx.fill()
+      // Top Penalty Spot
+      const topPenSpotY = padY + fieldH * 0.1048
+      ctx.beginPath()
+      ctx.arc(w / 2, topPenSpotY, w * 0.005, 0, Math.PI * 2)
+      ctx.fill()
 
-    // Left Penalty Arc (the "D")
-    const penArcRadius = fieldW * 0.0871
-    ctx.save()
-    ctx.beginPath()
-    ctx.rect(padX + penAreaW, padY, w, fieldH)
-    ctx.clip()
-    ctx.beginPath()
-    ctx.arc(leftPenSpotX, h / 2, penArcRadius, -Math.PI / 2, Math.PI / 2)
-    ctx.stroke()
-    ctx.restore()
+      // Top Penalty Arc (the "D")
+      const penArcRadius = fieldW * 0.0871
+      ctx.save()
+      ctx.beginPath()
+      ctx.rect(padX, padY + penAreaH, fieldW, h)
+      ctx.clip()
+      ctx.beginPath()
+      ctx.arc(w / 2, topPenSpotY, penArcRadius, 0, Math.PI)
+      ctx.stroke()
+      ctx.restore()
 
-    // Right Penalty Area
-    ctx.strokeRect(padX + fieldW - penAreaW, penAreaY, penAreaW, penAreaH)
+      // Bottom Penalty Area
+      ctx.strokeRect(penAreaX, padY + fieldH - penAreaH, penAreaW, penAreaH)
 
-    // Right Goal Area
-    ctx.strokeRect(padX + fieldW - goalAreaW, goalAreaY, goalAreaW, goalAreaH)
+      // Bottom Goal Area
+      ctx.strokeRect(goalAreaX, padY + fieldH - goalAreaH, goalAreaW, goalAreaH)
 
-    // Right Penalty Spot
-    const rightPenSpotX = padX + fieldW - fieldW * 0.1048
-    ctx.beginPath()
-    ctx.arc(rightPenSpotX, h / 2, w * 0.003, 0, Math.PI * 2)
-    ctx.fill()
+      // Bottom Penalty Spot
+      const bottomPenSpotY = padY + fieldH - fieldH * 0.1048
+      ctx.beginPath()
+      ctx.arc(w / 2, bottomPenSpotY, w * 0.005, 0, Math.PI * 2)
+      ctx.fill()
 
-    // Right Penalty Arc (the "D")
-    ctx.save()
-    ctx.beginPath()
-    ctx.rect(0, padY, padX + fieldW - penAreaW, fieldH)
-    ctx.clip()
-    ctx.beginPath()
-    ctx.arc(rightPenSpotX, h / 2, penArcRadius, Math.PI / 2, -Math.PI / 2, true)
-    ctx.stroke()
-    ctx.restore()
+      // Bottom Penalty Arc (the "D")
+      ctx.save()
+      ctx.beginPath()
+      ctx.rect(padX, padY, fieldW, fieldH - penAreaH)
+      ctx.clip()
+      ctx.beginPath()
+      ctx.arc(w / 2, bottomPenSpotY, penArcRadius, Math.PI, 0)
+      ctx.stroke()
+      ctx.restore()
+    } else {
+      // ═══════════════════════════════════════════════════════════
+      // LANDSCAPE FIELD LINES DRAWING
+      // ═══════════════════════════════════════════════════════════
+      // Center line
+      ctx.beginPath()
+      ctx.moveTo(w / 2, padY)
+      ctx.lineTo(w / 2, padY + fieldH)
+      ctx.stroke()
+
+      // Center circle
+      const centerRadius = fieldH * 0.18
+      ctx.beginPath()
+      ctx.arc(w / 2, h / 2, centerRadius, 0, Math.PI * 2)
+      ctx.stroke()
+
+      // Center spot
+      ctx.fillStyle = 'rgba(255, 255, 255, 0.9)'
+      ctx.beginPath()
+      ctx.arc(w / 2, h / 2, w * 0.004, 0, Math.PI * 2)
+      ctx.fill()
+
+      // Left Penalty Area
+      const penAreaW = fieldW * 0.1571
+      const penAreaH = fieldH * 0.5929
+      const penAreaY = padY + fieldH * 0.2035
+      ctx.strokeRect(padX, penAreaY, penAreaW, penAreaH)
+
+      // Left Goal Area
+      const goalAreaW = fieldW * 0.0524
+      const goalAreaH = fieldH * 0.2694
+      const goalAreaY = padY + fieldH * 0.3653
+      ctx.strokeRect(padX, goalAreaY, goalAreaW, goalAreaH)
+
+      // Left Penalty Spot
+      const leftPenSpotX = padX + fieldW * 0.1048
+      ctx.beginPath()
+      ctx.arc(leftPenSpotX, h / 2, w * 0.003, 0, Math.PI * 2)
+      ctx.fill()
+
+      // Left Penalty Arc (the "D")
+      const penArcRadius = fieldW * 0.0871
+      ctx.save()
+      ctx.beginPath()
+      ctx.rect(padX + penAreaW, padY, w, fieldH)
+      ctx.clip()
+      ctx.beginPath()
+      ctx.arc(leftPenSpotX, h / 2, penArcRadius, -Math.PI / 2, Math.PI / 2)
+      ctx.stroke()
+      ctx.restore()
+
+      // Right Penalty Area
+      ctx.strokeRect(padX + fieldW - penAreaW, penAreaY, penAreaW, penAreaH)
+
+      // Right Goal Area
+      ctx.strokeRect(padX + fieldW - goalAreaW, goalAreaY, goalAreaW, goalAreaH)
+
+      // Right Penalty Spot
+      const rightPenSpotX = padX + fieldW - fieldW * 0.1048
+      ctx.beginPath()
+      ctx.arc(rightPenSpotX, h / 2, w * 0.003, 0, Math.PI * 2)
+      ctx.fill()
+
+      // Right Penalty Arc (the "D")
+      ctx.save()
+      ctx.beginPath()
+      ctx.rect(0, padY, padX + fieldW - penAreaW, fieldH)
+      ctx.clip()
+      ctx.beginPath()
+      ctx.arc(rightPenSpotX, h / 2, penArcRadius, Math.PI / 2, -Math.PI / 2, true)
+      ctx.stroke()
+      ctx.restore()
+    }
 
     // Corner Arcs
-    const cornerRadius = fieldH * 0.025
+    const cornerRadius = (isMobile ? fieldW : fieldH) * 0.025
     ctx.beginPath()
     ctx.arc(padX, padY, cornerRadius, 0, Math.PI / 2)
     ctx.stroke()
@@ -582,25 +671,31 @@ function App() {
       const scale = arr.scale ?? 1
       ctx.strokeStyle = '#facc15'
       ctx.lineWidth = 4.5 * scale
+
+      const x1 = isMobile ? arr.y1 : arr.x1
+      const y1 = isMobile ? 100 - arr.x1 : arr.y1
+      const x2 = isMobile ? arr.y2 : arr.x2
+      const y2 = isMobile ? 100 - arr.x2 : arr.y2
+
       ctx.beginPath()
-      ctx.moveTo((arr.x1 / 100) * w, (arr.y1 / 100) * h)
-      ctx.lineTo((arr.x2 / 100) * w, (arr.y2 / 100) * h)
+      ctx.moveTo((x1 / 100) * w, (y1 / 100) * h)
+      ctx.lineTo((x2 / 100) * w, (y2 / 100) * h)
       ctx.stroke()
 
       ctx.fillStyle = '#facc15'
       ctx.beginPath()
-      ctx.arc((arr.x1 / 100) * w, (arr.y1 / 100) * h, Math.max(5, 6 * scale), 0, Math.PI * 2)
+      ctx.arc((x1 / 100) * w, (y1 / 100) * h, Math.max(5, 6 * scale), 0, Math.PI * 2)
       ctx.fill()
       ctx.beginPath()
-      ctx.arc((arr.x2 / 100) * w, (arr.y2 / 100) * h, Math.max(5, 6 * scale), 0, Math.PI * 2)
+      ctx.arc((x2 / 100) * w, (y2 / 100) * h, Math.max(5, 6 * scale), 0, Math.PI * 2)
       ctx.fill()
     })
 
     // 5. Draw elements
     elements.forEach((el) => {
       const scale = el.scale ?? 1
-      const elX = (el.x / 100) * w
-      const elY = (el.y / 100) * h
+      const elX = isMobile ? (el.y / 100) * w : (el.x / 100) * w
+      const elY = isMobile ? ((100 - el.x) / 100) * h : (el.y / 100) * h
 
       if (el.type === 'ball') {
         ctx.font = `${Math.round(28 * scale)}px sans-serif`
@@ -643,7 +738,7 @@ function App() {
         ctx.lineWidth = 1
         const boxW = textW + 16 * scale
         const boxH = textH + 10 * scale
-        
+
         ctx.beginPath()
         ctx.roundRect(elX - boxW / 2, elY - boxH / 2, boxW, boxH, 6 * scale)
         ctx.fill()
@@ -659,13 +754,13 @@ function App() {
     // 6. Draw players
     const drawPlayersOnCanvas = (playersList: typeof local, jerseyColor: string) => {
       playersList.forEach((j) => {
-        const pX = (j.x / 100) * w
-        const pY = (j.y / 100) * h
+        const pX = isMobile ? (j.y / 100) * w : (j.x / 100) * w
+        const pY = isMobile ? ((100 - j.x) / 100) * h : (j.y / 100) * h
 
         // Draw t-shirt SVG silhouette path
         ctx.save()
         ctx.translate(pX, pY - 14)
-        const jerseyScale = 1.0
+        const jerseyScale = isMobile ? 1.25 : 1.0
         ctx.scale(jerseyScale, jerseyScale)
         ctx.translate(-32, -34)
 
@@ -687,6 +782,7 @@ function App() {
         ctx.lineTo(16, 21)
         ctx.lineTo(8, 24)
         ctx.lineTo(8, 14)
+        ctx.lineTo(16, 3)
         ctx.lineTo(16, 3)
         ctx.closePath()
         ctx.fill()
@@ -770,7 +866,7 @@ function App() {
     showToast('✓ Imagen PNG descargada')
   }
 
-  /* ── Export as PDF (A4 landscape, 16:9 centered) ───────────────────── */
+  /* ── Export as PDF ─────────────────────────────────────────────────── */
   const exportWhiteboardAsPdf = async () => {
     const canvas = renderTacticToCanvas()
     if (!canvas) return
@@ -778,72 +874,36 @@ function App() {
     const { jsPDF } = await import('jspdf')
     const imgData = canvas.toDataURL('image/png')
 
-    // A4 landscape: 297 mm × 210 mm.  Fit 16:9 image to full width.
-    const pageW = 297
-    const pageH = 210
-    const imgH = (pageW * 9) / 16 // ≈ 167.06 mm
-    const offsetY = (pageH - imgH) / 2
-
-    const pdf = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4' })
-    pdf.addImage(imgData, 'PNG', 0, offsetY, pageW, imgH)
-    const safeName = tacticName.toLowerCase().trim().replace(/[^a-z0-9]+/g, '-') || 'pizarra-tactica'
-    pdf.save(`${safeName}-${Date.now()}.pdf`)
-    showToast('✓ PDF descargado')
-  }
-
-  /* ── Export as JSON Táctica ───────────────────────────────────────── */
-  const exportWhiteboardAsJson = () => {
-    const data: TacticaGuardada = {
-      local,
-      visitante,
-      colorLocal,
-      colorVisitante,
-      elements,
-      arrows,
-      tacticName,
-    }
-    const json = JSON.stringify(data, null, 2)
-    const blob = new Blob([json], { type: 'application/json' })
-    const url = URL.createObjectURL(blob)
-    const link = document.createElement('a')
-    const safeName = tacticName.toLowerCase().trim().replace(/[^a-z0-9]+/g, '-') || 'pizarra-tactica'
-    link.download = `${safeName}-${Date.now()}.json`
-    link.href = url
-    link.click()
-    URL.revokeObjectURL(url)
-    showToast('✓ Táctica exportada (JSON)')
-  }
-
-  /* ── Import from JSON ─────────────────────────────────────────────── */
-  const importarTactica = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0]
-    if (!file) return
-
-    const reader = new FileReader()
-    reader.onload = (event) => {
-      try {
-        const data: unknown = JSON.parse(event.target?.result as string)
-        if (isValidTacticaGuardada(data)) {
-          setLocal(deepClone(data.local))
-          setVisitante(deepClone(data.visitante))
-          setColorLocal(data.colorLocal)
-          setColorVisitante(data.colorVisitante)
-          setElements(deepClone(data.elements))
-          setArrows(deepClone(data.arrows))
-          setResetKey((k) => k + 1)
-          if (data.tacticName && typeof data.tacticName === 'string') {
-            setTacticName(data.tacticName)
-            localStorage.setItem('pizarra_tactica_name', data.tacticName)
-          }
-          showToast('✓ Táctica importada con éxito')
-        } else {
-          showToast('⚠ Formato JSON inválido')
-        }
-      } catch {
-        showToast('⚠ Error al leer el archivo JSON')
+    if (isMobile) {
+      // A4 portrait: 210 mm × 297 mm
+      const pageW = 210
+      const pageH = 297
+      let finalW = pageW
+      let finalH = (pageW * 16) / 9 // canvas is 9:16
+      if (finalH > pageH) {
+        finalH = pageH
+        finalW = (pageH * 9) / 16
       }
+      const offsetX = (pageW - finalW) / 2
+      const offsetY = (pageH - finalH) / 2
+
+      const pdf = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' })
+      pdf.addImage(imgData, 'PNG', offsetX, offsetY, finalW, finalH)
+      const safeName = tacticName.toLowerCase().trim().replace(/[^a-z0-9]+/g, '-') || 'pizarra-tactica'
+      pdf.save(`${safeName}-${Date.now()}.pdf`)
+    } else {
+      // A4 landscape: 297 mm × 210 mm
+      const pageW = 297
+      const pageH = 210
+      const imgH = (pageW * 9) / 16
+      const offsetY = (pageH - imgH) / 2
+
+      const pdf = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4' })
+      pdf.addImage(imgData, 'PNG', 0, offsetY, pageW, imgH)
+      const safeName = tacticName.toLowerCase().trim().replace(/[^a-z0-9]+/g, '-') || 'pizarra-tactica'
+      pdf.save(`${safeName}-${Date.now()}.pdf`)
     }
-    reader.readAsText(file)
+    showToast('✓ PDF descargado')
   }
 
   /* ── Shared field content (used in both mobile and desktop) ─────── */
@@ -1088,21 +1148,16 @@ function App() {
 
   /* ── Shared export dropdown content ─────────────────────────────── */
   const exportContent = (
-    <>
-      <button onClick={() => { setIsExportOpen(false); exportWhiteboardAsImage() }} className="w-full text-left px-3 py-2 rounded-lg text-xs font-medium text-text-primary hover:bg-surface-600 transition-colors flex items-center gap-2 cursor-pointer">
-        <Image size={14} className="text-emerald-400" /> Exportar PNG
+    <div className="flex flex-col gap-1 p-1">
+      <button onClick={() => { setIsExportOpen(false); exportWhiteboardAsImage() }} className="w-full text-left px-3 py-2.5 rounded-lg text-xs font-semibold text-text-primary hover:bg-surface-600 transition-colors flex items-center gap-2.5 cursor-pointer">
+        <Image size={15} className="text-emerald-400 shrink-0" />
+        <span>Exportar PNG</span>
       </button>
-      <button onClick={() => { setIsExportOpen(false); exportWhiteboardAsJson() }} className="w-full text-left px-3 py-2 rounded-lg text-xs font-medium text-text-primary hover:bg-surface-600 transition-colors flex items-center gap-2 cursor-pointer">
-        <FileJson size={14} className="text-blue-400" /> Exportar JSON
+      <button onClick={() => { setIsExportOpen(false); exportWhiteboardAsPdf() }} className="w-full text-left px-3 py-2.5 rounded-lg text-xs font-semibold text-text-primary hover:bg-surface-600 transition-colors flex items-center gap-2.5 cursor-pointer">
+        <FileText size={15} className="text-rose-400 shrink-0" />
+        <span>Exportar PDF</span>
       </button>
-      <button onClick={() => { setIsExportOpen(false); exportWhiteboardAsPdf() }} className="w-full text-left px-3 py-2 rounded-lg text-xs font-medium text-text-primary hover:bg-surface-600 transition-colors flex items-center gap-2 cursor-pointer">
-        <FileText size={14} className="text-rose-400" /> Exportar PDF
-      </button>
-      <div className="h-px bg-white/5 my-1" />
-      <button onClick={() => { setIsExportOpen(false); fileInputRef.current?.click() }} className="w-full text-left px-3 py-2 rounded-lg text-xs font-medium text-text-primary hover:bg-surface-600 transition-colors flex items-center gap-2 cursor-pointer">
-        <UploadIcon size={14} className="text-violet-400" /> Importar JSON
-      </button>
-    </>
+    </div>
   )
 
   /* ── Shared share popover content ───────────────────────────────── */
@@ -1125,10 +1180,6 @@ function App() {
         </button>
       </div>
     </>
-  )
-
-  const hiddenFileInput = (
-    <input type="file" ref={fileInputRef} onChange={importarTactica} accept=".json" className="hidden" />
   )
 
   if (isMobile) {
@@ -1225,7 +1276,6 @@ function App() {
             </div>
           </div>
         </nav>
-        {hiddenFileInput}
         <div
           className={`fixed bottom-20 left-1/2 -translate-x-1/2 z-50
                       px-4 py-2 rounded-xl text-sm font-medium
@@ -1377,7 +1427,6 @@ function App() {
             )}
           </div>
         </div>
-        {hiddenFileInput}
       </header>
       <main className="flex-1 flex items-center justify-center p-4 sm:p-6 lg:p-10">
         <div className="relative w-full max-w-6xl">
