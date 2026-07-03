@@ -546,7 +546,7 @@ function App() {
       ctx.fill()
 
       // Top Penalty Arc (the "D")
-      const penArcRadius = fieldW * 0.0871
+      const penArcRadius = fieldH * 0.0871
       ctx.save()
       ctx.beginPath()
       ctx.rect(padX, padY + penAreaH, fieldW, h)
@@ -646,7 +646,7 @@ function App() {
       ctx.rect(0, padY, padX + fieldW - penAreaW, fieldH)
       ctx.clip()
       ctx.beginPath()
-      ctx.arc(rightPenSpotX, h / 2, penArcRadius, Math.PI / 2, -Math.PI / 2, true)
+      ctx.arc(rightPenSpotX, h / 2, penArcRadius, Math.PI / 2, -Math.PI / 2)
       ctx.stroke()
       ctx.restore()
     }
