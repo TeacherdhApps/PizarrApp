@@ -1156,7 +1156,7 @@ function App() {
             </button>
           </div>
         </main>
-        <nav className="shrink-0 bg-surface-800/90 backdrop-blur-md border-t border-white/5 px-2 py-2 safe-area-pb select-none" style={{ paddingBottom: 'max(0.5rem, env(safe-area-inset-bottom))' }}>
+        <nav className="relative z-[60] shrink-0 bg-surface-800/90 backdrop-blur-md border-t border-white/5 px-2 py-2 safe-area-pb select-none" style={{ paddingBottom: 'max(0.5rem, env(safe-area-inset-bottom))' }}>
           <div className="flex items-center justify-around gap-1">
             <Toolbar onAdd={handleAddTool} onClearExtras={clearExtras} isMobile={true} />
             <div className="relative">
