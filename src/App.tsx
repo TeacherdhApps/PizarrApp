@@ -18,11 +18,11 @@ const formacionLocal: Jugador[] = [
   { numero: 15, nombre: 'Valverde', x: 18,  y: 62 },
   { numero: 2,  nombre: 'Carvajal', x: 18,  y: 82 },
   { numero: 8,  nombre: 'Kroos',    x: 35,  y: 35 },
-  { numero: 10, nombre: 'Modric',   x: 35,  y: 65 },
+  { numero: 11, nombre: 'Modric',   x: 35,  y: 65 },
   { numero: 22, nombre: 'Isco',     x: 42,  y: 50 },
   { numero: 7,  nombre: 'Mbappé',   x: 44,  y: 18 },
   { numero: 9,  nombre: 'Benzema',  x: 48,  y: 50 },
-  { numero: 11, nombre: 'Vini Jr',  x: 44,  y: 82 },
+  { numero: 10, nombre: 'Vini Jr',  x: 44,  y: 82 },
 ]
 
 const formacionVisitante: Jugador[] = [
@@ -36,7 +36,7 @@ const formacionVisitante: Jugador[] = [
   { numero: 20, nombre: 'B. Silva', x: 62,  y: 70 },
   { numero: 47, nombre: 'Foden',    x: 56,  y: 18 },
   { numero: 9,  nombre: 'Haaland',  x: 52,  y: 50 },
-  { numero: 10, nombre: 'Grealish', x: 56,  y: 82 },
+  { numero: 11, nombre: 'Grealish', x: 56,  y: 82 },
 ]
 
 const formacion7Local: Jugador[] = [
@@ -44,7 +44,7 @@ const formacion7Local: Jugador[] = [
   { numero: 3,  nombre: 'Piqué',    x: 18,  y: 30 },
   { numero: 4,  nombre: 'Ramos',    x: 18,  y: 70 },
   { numero: 8,  nombre: 'Kroos',    x: 35,  y: 50 },
-  { numero: 10, nombre: 'Modric',   x: 42,  y: 25 },
+  { numero: 11, nombre: 'Modric',   x: 42,  y: 25 },
   { numero: 22, nombre: 'Isco',     x: 42,  y: 75 },
   { numero: 9,  nombre: 'Benzema',  x: 48,  y: 50 },
 ]
@@ -65,7 +65,7 @@ const formacion9Local: Jugador[] = [
   { numero: 4,  nombre: 'Ramos',    x: 18,  y: 50 },
   { numero: 15, nombre: 'Valverde', x: 18,  y: 75 },
   { numero: 8,  nombre: 'Kroos',    x: 35,  y: 30 },
-  { numero: 10, nombre: 'Modric',   x: 35,  y: 70 },
+  { numero: 11, nombre: 'Modric',   x: 35,  y: 70 },
   { numero: 22, nombre: 'Isco',     x: 42,  y: 50 },
   { numero: 7,  nombre: 'Mbappé',   x: 46,  y: 25 },
   { numero: 9,  nombre: 'Benzema',  x: 48,  y: 75 },

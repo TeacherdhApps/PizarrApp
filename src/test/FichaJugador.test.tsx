@@ -8,7 +8,7 @@ describe('FichaJugador', () => {
     const constraintsRef = createRef<HTMLDivElement>();
     render(
       <FichaJugador
-        numero={10}
+        numero={11}
         nombre="Messi"
         color="#000000"
         x={50}
@@ -17,7 +17,7 @@ describe('FichaJugador', () => {
       />
     );
 
-    expect(screen.getByText('10')).toBeInTheDocument();
+    expect(screen.getByText('11')).toBeInTheDocument();
     expect(screen.getByText('Messi')).toBeInTheDocument();
   });
 
@@ -27,7 +27,7 @@ describe('FichaJugador', () => {
     
     render(
       <FichaJugador
-        numero={10}
+        numero={11}
         nombre="Messi"
         color="#000000"
         x={50}
@@ -54,7 +54,7 @@ describe('FichaJugador', () => {
     const constraintsRef = createRef<HTMLDivElement>();
     render(
       <FichaJugador
-        numero={10}
+        numero={11}
         nombre="Messi"
         color="#000000"
         x={50}
