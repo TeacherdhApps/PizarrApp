@@ -4,14 +4,18 @@ import {
   Users, 
   Save, 
   RotateCcw, 
-  Download, 
   Link2, 
   GripVertical, 
   Triangle, 
   Minus, 
   Type, 
   Trash2, 
-  Icon
+  Icon,
+  Settings,
+  Image,
+  FileText,
+  Copy,
+  Check
 } from 'lucide-react';
 import { soccerBall } from '@lucide/lab';
 import type { ElementType } from '../types';
@@ -21,19 +25,16 @@ interface FloatingMenuProps {
   onClearExtras?: () => void;
   onGuardar: () => void;
   onReiniciar: () => void;
+  onExportPng: () => void;
+  onExportPdf: () => void;
   generateShareLink: () => void;
+  copyShareLink: () => void;
+  shareUrl: string;
+  isCopied: boolean;
 
   isTeamConfigOpen: boolean;
   setIsTeamConfigOpen: (open: boolean) => void;
   teamConfigContent: React.ReactNode;
-
-  isExportOpen: boolean;
-  setIsExportOpen: (open: boolean) => void;
-  exportContent: React.ReactNode;
-
-  isShareOpen: boolean;
-  setIsShareOpen: (open: boolean) => void;
-  shareContent: React.ReactNode;
 }
 
 export default function FloatingMenu({
@@ -41,20 +42,20 @@ export default function FloatingMenu({
   onClearExtras,
   onGuardar,
   onReiniciar,
+  onExportPng,
+  onExportPdf,
   generateShareLink,
+  copyShareLink,
+  shareUrl,
+  isCopied,
   isTeamConfigOpen,
   setIsTeamConfigOpen,
-  teamConfigContent,
-  isExportOpen,
-  setIsExportOpen,
-  exportContent,
-  isShareOpen,
-  setIsShareOpen,
-  shareContent
+  teamConfigContent
 }: FloatingMenuProps) {
   const [isMounted, setIsMounted] = useState(false);
   const [isExpanded, setIsExpanded] = useState(false);
   const [isExtrasOpen, setIsExtrasOpen] = useState(false);
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [position, setPosition] = useState({ x: 0, y: 0 });
 
   const containerRef = useRef<HTMLDivElement>(null);
@@ -89,9 +90,8 @@ export default function FloatingMenu({
 
   const closeAll = () => {
     setIsExtrasOpen(false);
+    setIsSettingsOpen(false);
     setIsTeamConfigOpen(false);
-    setIsExportOpen(false);
-    setIsShareOpen(false);
   };
 
   const handlePointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
@@ -157,31 +157,19 @@ export default function FloatingMenu({
     }
   };
 
-  const handleTogglePanel = (panel: 'extras' | 'teams' | 'export' | 'share') => {
+  const handleTogglePanel = (panel: 'extras' | 'teams' | 'settings') => {
     if (panel === 'extras') {
       setIsExtrasOpen(!isExtrasOpen);
+      setIsSettingsOpen(false);
       setIsTeamConfigOpen(false);
-      setIsExportOpen(false);
-      setIsShareOpen(false);
     } else if (panel === 'teams') {
       setIsTeamConfigOpen(!isTeamConfigOpen);
       setIsExtrasOpen(false);
-      setIsExportOpen(false);
-      setIsShareOpen(false);
-    } else if (panel === 'export') {
-      setIsExportOpen(!isExportOpen);
+      setIsSettingsOpen(false);
+    } else if (panel === 'settings') {
+      setIsSettingsOpen(!isSettingsOpen);
       setIsExtrasOpen(false);
       setIsTeamConfigOpen(false);
-      setIsShareOpen(false);
-    } else if (panel === 'share') {
-      setIsExtrasOpen(false);
-      setIsTeamConfigOpen(false);
-      setIsExportOpen(false);
-      if (!isShareOpen) {
-        generateShareLink();
-      } else {
-        setIsShareOpen(false);
-      }
     }
   };
 
@@ -231,7 +219,7 @@ export default function FloatingMenu({
     },
   ];
 
-  const anyPanelOpen = isExtrasOpen || isTeamConfigOpen || isExportOpen || isShareOpen;
+  const anyPanelOpen = isExtrasOpen || isTeamConfigOpen || isSettingsOpen;
 
   return (
     <>
@@ -364,65 +352,122 @@ export default function FloatingMenu({
                 )}
               </div>
 
-              {/* Guardar */}
-              <button
-                onClick={onGuardar}
-                className="flex items-center justify-center w-9 h-9 rounded-xl bg-accent-500/10 text-accent-400 hover:bg-accent-500/20 hover:text-accent-300 border border-accent-500/20 hover:border-accent-500/40 transition-all cursor-pointer active:scale-90"
-                title="Guardar Táctica"
-              >
-                <Save size={16} />
-              </button>
-
-              {/* Reiniciar */}
-              <button
-                onClick={onReiniciar}
-                className="flex items-center justify-center w-9 h-9 rounded-xl bg-surface-700/60 text-text-secondary hover:text-text-primary hover:bg-surface-700 border border-border transition-all cursor-pointer active:scale-90"
-                title="Reiniciar Cancha"
-              >
-                <RotateCcw size={16} />
-              </button>
-
-              {/* Exportar */}
+              {/* Settings & Board actions (Guardar, Reiniciar, Exportar, Compartir) */}
               <div className="relative">
                 <button
-                  onClick={() => handleTogglePanel('export')}
+                  onClick={() => handleTogglePanel('settings')}
                   className={`flex items-center justify-center w-9 h-9 rounded-xl border transition-all cursor-pointer active:scale-90 ${
-                    isExportOpen
-                      ? 'bg-blue-600/20 text-blue-400 border-blue-500/30'
+                    isSettingsOpen
+                      ? 'bg-accent-500/20 text-accent-400 border-accent-500/30 font-semibold'
                       : 'bg-surface-700/60 text-text-secondary border-border hover:bg-surface-700 hover:text-text-primary'
                   }`}
-                  title="Exportar / Importar"
+                  title="Configuración y Archivo"
                 >
-                  <Download size={16} />
+                  <Settings size={16} />
                 </button>
-                {isExportOpen && (
-                  <div className={`z-[100] rounded-xl border border-border bg-surface-700 p-1.5 shadow-2xl animate-in fade-in duration-150 md:absolute md:w-48 ${popoverPositionClass} popover-mobile`}>
-                    {exportContent}
-                  </div>
-                )}
-              </div>
+                {isSettingsOpen && (
+                  <div className={`z-[100] rounded-xl border border-border bg-surface-700 p-4 shadow-2xl animate-in fade-in duration-150 md:absolute md:w-[300px] ${popoverPositionClass} popover-mobile`}>
+                    <div className="space-y-4">
+                      {/* Board Actions */}
+                      <div>
+                        <h4 className="text-[9px] font-bold uppercase tracking-wider text-text-muted mb-2 px-1">Pizarra</h4>
+                        <div className="space-y-1">
+                          <button 
+                            onClick={() => { closeAll(); onGuardar(); }} 
+                            className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-left hover:bg-surface-600 transition-colors group cursor-pointer"
+                          >
+                            <div className="w-7 h-7 rounded bg-accent-500/10 text-accent-400 flex items-center justify-center border border-accent-500/20 shrink-0">
+                              <Save size={14} />
+                            </div>
+                            <div className="flex flex-col min-w-0">
+                              <span className="text-xs font-semibold text-text-primary leading-tight">Guardar Táctica</span>
+                              <span className="text-[9px] text-text-muted leading-tight">Guarda el progreso localmente</span>
+                            </div>
+                          </button>
 
-              {/* Compartir */}
-              <div className="relative">
-                <button
-                  onClick={() => handleTogglePanel('share')}
-                  className={`flex items-center justify-center w-9 h-9 rounded-xl border transition-all cursor-pointer active:scale-90 ${
-                    isShareOpen
-                      ? 'bg-emerald-600/20 text-emerald-400 border-emerald-500/30'
-                      : 'bg-surface-700/60 text-text-secondary border-border hover:bg-surface-700 hover:text-text-primary'
-                  }`}
-                  title="Compartir táctica"
-                >
-                  <Link2 size={16} />
-                </button>
-                {isShareOpen && (
-                  <div className={`z-[100] rounded-xl border border-border bg-surface-700 p-4 shadow-2xl animate-in fade-in duration-150 md:absolute md:w-[340px] ${popoverPositionClass} popover-mobile`}>
-                    {shareContent}
-                    <div className="mt-3 pt-2.5 border-t border-white/5">
-                      <p className="text-[10px] text-text-muted leading-relaxed">
-                        <span className="font-semibold text-text-secondary">💡 Tip:</span>{' '}
-                        Guarda este enlace en tus marcadores o compártelo por WhatsApp, correo o cualquier medio. La táctica viaja dentro del enlace, sin necesidad de cuenta ni servidor.
-                      </p>
+                          <button 
+                            onClick={() => { closeAll(); onReiniciar(); }} 
+                            className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-left hover:bg-red-500/10 text-red-400 transition-colors group cursor-pointer"
+                          >
+                            <div className="w-7 h-7 rounded bg-red-500/10 text-red-400 flex items-center justify-center border border-red-500/20 shrink-0">
+                              <RotateCcw size={14} />
+                            </div>
+                            <div className="flex flex-col min-w-0">
+                              <span className="text-xs font-semibold leading-tight">Reiniciar Cancha</span>
+                              <span className="text-[9px] opacity-70 leading-tight">Limpia y resetea las fichas</span>
+                            </div>
+                          </button>
+                        </div>
+                      </div>
+
+                      <div className="h-px bg-white/5" />
+
+                      {/* Export Actions */}
+                      <div>
+                        <h4 className="text-[9px] font-bold uppercase tracking-wider text-text-muted mb-2 px-1">Exportar</h4>
+                        <div className="grid grid-cols-2 gap-2">
+                          <button 
+                            onClick={() => { closeAll(); onExportPng(); }} 
+                            className="flex items-center justify-center gap-2 py-2 px-2.5 rounded-lg bg-surface-800 hover:bg-surface-600 border border-border hover:border-white/10 transition-colors group cursor-pointer"
+                            title="Exportar como imagen PNG"
+                          >
+                            <Image size={14} className="text-emerald-400" />
+                            <span className="text-xs font-semibold text-text-primary">Imagen PNG</span>
+                          </button>
+                          <button 
+                            onClick={() => { closeAll(); onExportPdf(); }} 
+                            className="flex items-center justify-center gap-2 py-2 px-2.5 rounded-lg bg-surface-800 hover:bg-surface-600 border border-border hover:border-white/10 transition-colors group cursor-pointer"
+                            title="Descargar en PDF A4"
+                          >
+                            <FileText size={14} className="text-rose-400" />
+                            <span className="text-xs font-semibold text-text-primary">PDF A4</span>
+                          </button>
+                        </div>
+                      </div>
+
+                      <div className="h-px bg-white/5" />
+
+                      {/* Share Actions */}
+                      <div>
+                        <h4 className="text-[9px] font-bold uppercase tracking-wider text-text-muted mb-2 px-1">Compartir</h4>
+                        {shareUrl ? (
+                          <div className="space-y-2">
+                            <p className="text-[9px] text-text-muted leading-tight px-1">
+                              Copia este enlace de abajo para compartir tu táctica:
+                            </p>
+                            <div className="flex items-center gap-1.5">
+                              <input 
+                                readOnly 
+                                value={shareUrl} 
+                                onClick={(e) => (e.target as HTMLInputElement).select()}
+                                className="flex-1 min-w-0 px-2.5 py-1.5 rounded-lg bg-surface-900/80 text-[10px] text-text-secondary border border-border font-mono truncate outline-none focus:ring-1 focus:ring-emerald-500/30" 
+                              />
+                              <button 
+                                onClick={copyShareLink}
+                                className={`flex items-center justify-center w-8 h-8 rounded-lg border transition-all duration-150 cursor-pointer active:scale-90 shrink-0 ${
+                                  isCopied ? 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30' : 'bg-surface-600 text-text-secondary hover:text-text-primary border-border hover:bg-surface-500'
+                                }`} 
+                                title="Copiar enlace"
+                              >
+                                {isCopied ? <Check size={14} /> : <Copy size={14} />}
+                              </button>
+                            </div>
+                          </div>
+                        ) : (
+                          <button 
+                            onClick={generateShareLink} 
+                            className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-left hover:bg-emerald-500/10 text-emerald-400 transition-colors group cursor-pointer"
+                          >
+                            <div className="w-7 h-7 rounded bg-emerald-500/10 text-emerald-400 flex items-center justify-center border border-emerald-500/20 shrink-0">
+                              <Link2 size={14} />
+                            </div>
+                            <div className="flex flex-col min-w-0">
+                              <span className="text-xs font-semibold leading-tight">Generar Enlace</span>
+                              <span className="text-[9px] opacity-70 leading-tight">Crea un enlace para compartir</span>
+                            </div>
+                          </button>
+                        )}
+                      </div>
                     </div>
                   </div>
                 )}

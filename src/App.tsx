@@ -6,7 +6,7 @@ import DraggableElement from './components/DraggableElement'
 import InteractiveArrow from './components/InteractiveArrow'
 import { uid, isValidTacticaGuardada } from './types'
 import type { Jugador, FieldElement, ArrowItem, TacticaGuardada, ElementType } from './types'
-import { Plus, Minus, Image, FileText, Pencil, Link2, Copy, Check, Maximize, Minimize } from 'lucide-react'
+import { Plus, Minus, Pencil, Maximize, Minimize } from 'lucide-react'
 
 const LS_KEY = 'pizarra-tactica'
 
@@ -165,13 +165,10 @@ function App() {
    */
   const [resetKey, setResetKey] = useState(0)
 
-  // Export dropdown & Import file ref
-  const [isExportOpen, setIsExportOpen] = useState(false)
+  // Alignment configuration popup state
   const [isTeamConfigOpen, setIsTeamConfigOpen] = useState(false)
 
-
   // Share link state
-  const [isShareOpen, setIsShareOpen] = useState(false)
   const [shareUrl, setShareUrl] = useState('')
   const [isCopied, setIsCopied] = useState(false)
 
@@ -276,7 +273,6 @@ function App() {
     const url = `${window.location.origin}${window.location.pathname}#t=${compressed}`
     setShareUrl(url)
     setIsCopied(false)
-    setIsShareOpen(true)
   }
 
   const copyShareLink = async () => {
@@ -1255,41 +1251,7 @@ function App() {
     </div>
   )
 
-  /* ── Shared export dropdown content ─────────────────────────────── */
-  const exportContent = (
-    <div className="flex flex-col gap-1 p-1">
-      <button onClick={() => { setIsExportOpen(false); exportWhiteboardAsImage() }} className="w-full text-left px-3 py-2.5 rounded-lg text-xs font-semibold text-text-primary hover:bg-surface-600 transition-colors flex items-center gap-2.5 cursor-pointer">
-        <Image size={15} className="text-emerald-400 shrink-0" />
-        <span>Exportar PNG</span>
-      </button>
-      <button onClick={() => { setIsExportOpen(false); exportWhiteboardAsPdf() }} className="w-full text-left px-3 py-2.5 rounded-lg text-xs font-semibold text-text-primary hover:bg-surface-600 transition-colors flex items-center gap-2.5 cursor-pointer">
-        <FileText size={15} className="text-rose-400 shrink-0" />
-        <span>Exportar PDF</span>
-      </button>
-    </div>
-  )
-
-  /* ── Shared share popover content ───────────────────────────────── */
-  const shareContent = (
-    <>
-      <h3 className="text-xs font-bold text-text-primary flex items-center gap-1.5 mb-1">
-        <Link2 size={13} className="text-emerald-400" /> Compartir Táctica
-      </h3>
-      <p className="text-[10px] text-text-muted mb-3 leading-relaxed">
-        Copia este enlace para guardar o compartir tu táctica.
-      </p>
-      <div className="flex items-center gap-1.5">
-        <input readOnly value={shareUrl} onClick={(e) => (e.target as HTMLInputElement).select()}
-          className="flex-1 min-w-0 px-2.5 py-1.5 rounded-lg bg-surface-900/80 text-[11px] text-text-secondary border border-border font-mono truncate outline-none focus:ring-1 focus:ring-emerald-500/30" />
-        <button onClick={copyShareLink}
-          className={`flex items-center justify-center w-8 h-8 rounded-lg border transition-all duration-150 cursor-pointer active:scale-90 shrink-0 ${
-            isCopied ? 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30' : 'bg-surface-600 text-text-secondary hover:text-text-primary border-border hover:bg-surface-500'
-          }`} title="Copiar enlace">
-          {isCopied ? <Check size={14} /> : <Copy size={14} />}
-        </button>
-      </div>
-    </>
-  )
+  // exportContent and shareContent are now rendered directly inside FloatingMenu
 
   if (isMobile) {
     return (
@@ -1324,16 +1286,15 @@ function App() {
           onClearExtras={clearExtras}
           onGuardar={guardarTactica}
           onReiniciar={reiniciar}
+          onExportPng={exportWhiteboardAsImage}
+          onExportPdf={exportWhiteboardAsPdf}
           generateShareLink={generateShareLink}
+          copyShareLink={copyShareLink}
+          shareUrl={shareUrl}
+          isCopied={isCopied}
           isTeamConfigOpen={isTeamConfigOpen}
           setIsTeamConfigOpen={setIsTeamConfigOpen}
           teamConfigContent={teamConfigContent}
-          isExportOpen={isExportOpen}
-          setIsExportOpen={setIsExportOpen}
-          exportContent={exportContent}
-          isShareOpen={isShareOpen}
-          setIsShareOpen={setIsShareOpen}
-          shareContent={shareContent}
         />
         <div
           className={`fixed bottom-20 left-1/2 -translate-x-1/2 z-50
@@ -1449,16 +1410,15 @@ function App() {
         onClearExtras={clearExtras}
         onGuardar={guardarTactica}
         onReiniciar={reiniciar}
+        onExportPng={exportWhiteboardAsImage}
+        onExportPdf={exportWhiteboardAsPdf}
         generateShareLink={generateShareLink}
+        copyShareLink={copyShareLink}
+        shareUrl={shareUrl}
+        isCopied={isCopied}
         isTeamConfigOpen={isTeamConfigOpen}
         setIsTeamConfigOpen={setIsTeamConfigOpen}
         teamConfigContent={teamConfigContent}
-        isExportOpen={isExportOpen}
-        setIsExportOpen={setIsExportOpen}
-        exportContent={exportContent}
-        isShareOpen={isShareOpen}
-        setIsShareOpen={setIsShareOpen}
-        shareContent={shareContent}
       />
     </div>
   )
