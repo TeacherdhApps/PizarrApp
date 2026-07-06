@@ -20,6 +20,8 @@ export interface FichaJugadorProps {
   onDelete?: (numero: number) => void;
   /** Called when the player name is edited */
   onNameChange?: (newName: string) => void;
+  /** Called when the player number is edited */
+  onNumberChange?: (newNumber: number) => void;
   /** Whether we are in mobile layout (vertical pitch) */
   isMobile?: boolean;
 }
@@ -41,11 +43,13 @@ export default function FichaJugador({
   onDragEnd,
   onDelete,
   onNameChange,
+  onNumberChange,
   isMobile = false,
 }: FichaJugadorProps) {
   const [isDragging, setIsDragging] = useState(false);
   const [hovered, setHovered] = useState(false);
   const [editing, setEditing] = useState(false);
+  const [editingNumber, setEditingNumber] = useState(false);
 
   const { onPointerDown } = usePercentDrag({
     containerRef: constraintsRef,
@@ -67,11 +71,28 @@ export default function FichaJugador({
     }
   };
 
+  const handleFinishEditNumber = (value: string) => {
+    setEditingNumber(false);
+    const parsed = parseInt(value, 10);
+    if (!isNaN(parsed) && parsed !== numero && parsed >= 0) {
+      onNumberChange?.(parsed);
+    }
+  };
+
   return (
     <div
-      onPointerDown={editing ? undefined : onPointerDown}
+      onPointerDown={(editing || editingNumber) ? undefined : onPointerDown}
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
+      onDoubleClick={(e) => {
+        e.stopPropagation();
+        const target = e.target as HTMLElement;
+        if (target.closest('.player-name-label')) {
+          setEditing(true);
+        } else {
+          setEditingNumber(true);
+        }
+      }}
       className="absolute flex flex-col items-center gap-0.5 select-none touch-none"
       style={{
         left: `${x}%`,
@@ -93,6 +114,40 @@ export default function FichaJugador({
           filter: 'drop-shadow(0 2px 5px rgba(0,0,0,0.4))',
         }}
       >
+        {editingNumber && (
+          <input
+            type="text"
+            inputMode="numeric"
+            pattern="[0-9]*"
+            autoFocus
+            defaultValue={numero}
+            onBlur={(e) => handleFinishEditNumber(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') handleFinishEditNumber((e.target as HTMLInputElement).value);
+              if (e.key === 'Escape') setEditingNumber(false);
+            }}
+            onPointerDown={(e) => e.stopPropagation()}
+            onClick={(e) => e.stopPropagation()}
+            className="absolute inset-0 m-auto w-8 h-8 rounded bg-black/85 text-white font-bold text-center border border-accent-400/40 outline-none z-50 flex items-center justify-center text-sm"
+          />
+        )}
+        {/* Edit number button */}
+        {hovered && !editingNumber && !editing && (
+          <button
+            onPointerDown={(e) => e.stopPropagation()}
+            onClick={(e) => {
+              e.stopPropagation();
+              setEditingNumber(true);
+            }}
+            className="absolute -top-1 -left-1 z-50 w-4 h-4 rounded-full
+                       bg-accent-500 hover:bg-accent-400 text-white text-[8px]
+                       flex items-center justify-center font-bold leading-none
+                       shadow-md cursor-pointer transition-colors"
+            title="Editar número"
+          >
+            #
+          </button>
+        )}
         {/* Delete button */}
         {hovered && !editing && (
           <button
@@ -149,18 +204,20 @@ export default function FichaJugador({
           <line x1="16" y1="21" x2="22" y2="5" stroke="rgba(255,255,255,0.18)" strokeWidth="0.8" />
           <line x1="48" y1="21" x2="42" y2="5" stroke="rgba(255,255,255,0.18)" strokeWidth="0.8" />
           {/* Number text on back */}
-          <text
-            x="32"
-            y="44"
-            textAnchor="middle"
-            fill="white"
-            fontSize="22"
-            fontWeight="bold"
-            fontFamily="system-ui, sans-serif"
-            style={{ textShadow: '0 1px 2px rgba(0,0,0,0.3)' }}
-          >
-            {numero}
-          </text>
+          {!editingNumber && (
+            <text
+              x="32"
+              y="44"
+              textAnchor="middle"
+              fill="white"
+              fontSize="22"
+              fontWeight="bold"
+              fontFamily="system-ui, sans-serif"
+              style={{ textShadow: '0 1px 2px rgba(0,0,0,0.3)' }}
+            >
+              {numero}
+            </text>
+          )}
         </svg>
       </div>
 
@@ -185,11 +242,7 @@ export default function FichaJugador({
       ) : (
         <span
           onPointerDown={(e) => e.stopPropagation()}
-          onDoubleClick={(e) => {
-            e.stopPropagation();
-            setEditing(true);
-          }}
-          className="font-semibold text-white text-center leading-tight whitespace-nowrap drop-shadow-md cursor-pointer"
+          className="player-name-label font-semibold text-white text-center leading-tight whitespace-nowrap drop-shadow-md cursor-pointer"
           style={{ fontSize: isMobile ? 'clamp(7px, 2.2vw, 10px)' : 'clamp(7px, 0.8vw, 11px)' }}
         >
           {nombre}

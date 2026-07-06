@@ -1,12 +1,12 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import Cancha from './components/Cancha'
 import FichaJugador from './components/FichaJugador'
-import Toolbar from './components/Toolbar'
+import FloatingMenu from './components/FloatingMenu'
 import DraggableElement from './components/DraggableElement'
 import InteractiveArrow from './components/InteractiveArrow'
 import { uid, isValidTacticaGuardada } from './types'
 import type { Jugador, FieldElement, ArrowItem, TacticaGuardada, ElementType } from './types'
-import { Users, ChevronDown, Plus, Minus, Save, RotateCcw, Download, Image, FileText, Pencil, Link2, Copy, Check, Maximize, Minimize } from 'lucide-react'
+import { Plus, Minus, Image, FileText, Pencil, Link2, Copy, Check, Maximize, Minimize } from 'lucide-react'
 
 const LS_KEY = 'pizarra-tactica'
 
@@ -233,11 +233,11 @@ function App() {
   const [toast, setToast] = useState<string | null>(null)
   const toastTimer = useRef<ReturnType<typeof setTimeout>>(null)
 
-  const showToast = (msg: string) => {
+  const showToast = useCallback((msg: string) => {
     if (toastTimer.current) clearTimeout(toastTimer.current)
     setToast(msg)
     toastTimer.current = setTimeout(() => setToast(null), 2000)
-  }
+  }, [])
 
   /* ── Load tactic from shareable URL hash on mount ─────────────────── */
   useEffect(() => {
@@ -347,6 +347,34 @@ function App() {
       )
     },
     [],
+  )
+
+  const handleLocalNumberChange = useCallback(
+    (oldNumero: number, newNumero: number) => {
+      const isTaken = local.some((j) => j.numero === newNumero)
+      if (isTaken) {
+        showToast(`El número ${newNumero} ya está ocupado`)
+        return
+      }
+      setLocal((prev) =>
+        prev.map((j) => (j.numero === oldNumero ? { ...j, numero: newNumero } : j)),
+      )
+    },
+    [local, showToast],
+  )
+
+  const handleVisitanteNumberChange = useCallback(
+    (oldNumero: number, newNumero: number) => {
+      const isTaken = visitante.some((j) => j.numero === newNumero)
+      if (isTaken) {
+        showToast(`El número ${newNumero} ya está ocupado`)
+        return
+      }
+      setVisitante((prev) =>
+        prev.map((j) => (j.numero === oldNumero ? { ...j, numero: newNumero } : j)),
+      )
+    },
+    [visitante, showToast],
   )
 
   /* ── Element Add & Update Handlers ────────────────────────────────── */
@@ -1061,6 +1089,7 @@ function App() {
             }}
             onDelete={handleDeleteLocalPlayer}
             onNameChange={(newName) => handleLocalNameChange(j.numero, newName)}
+            onNumberChange={(newNum) => handleLocalNumberChange(j.numero, newNum)}
             isMobile={isMobile}
           />
         )
@@ -1086,6 +1115,7 @@ function App() {
             }}
             onDelete={handleDeleteVisitantePlayer}
             onNameChange={(newName) => handleVisitanteNameChange(j.numero, newName)}
+            onNumberChange={(newNum) => handleVisitanteNumberChange(j.numero, newNum)}
             isMobile={isMobile}
           />
         )
@@ -1286,75 +1316,25 @@ function App() {
             </button>
           </div>
         </main>
-        <nav className="relative z-[60] shrink-0 bg-surface-800/90 backdrop-blur-md border-t border-white/5 px-2 py-2 safe-area-pb select-none" style={{ paddingBottom: 'max(0.5rem, env(safe-area-inset-bottom))' }}>
-          <div className="flex items-center justify-around gap-1">
-            <Toolbar onAdd={handleAddTool} onClearExtras={clearExtras} isMobile={true} />
-            <div className="relative">
-              <button
-                onClick={() => { setIsTeamConfigOpen(!isTeamConfigOpen); setIsExportOpen(false); setIsShareOpen(false) }}
-                className={`flex items-center justify-center w-10 h-10 rounded-xl border transition-all cursor-pointer active:scale-90 ${
-                  isTeamConfigOpen
-                    ? 'bg-accent-500/20 text-accent-400 border-accent-500/30'
-                    : 'bg-surface-700/60 text-text-secondary border-border'
-                }`}
-                title="Alineaciones"
-              >
-                <Users size={18} />
-              </button>
-              {isTeamConfigOpen && (
-                <>
-                  <div className="fixed inset-0 z-[90]" onClick={() => setIsTeamConfigOpen(false)} />
-                  <div className="popover-mobile rounded-xl border border-border bg-surface-700 p-4 shadow-2xl z-[100] animate-in fade-in slide-in-from-bottom-2 duration-150">
-                    <h3 className="text-[10px] font-bold uppercase tracking-wider text-text-secondary mb-3 flex items-center gap-1.5">
-                      <Users size={12} /> Alineaciones y Equipos
-                    </h3>
-                    {teamConfigContent}
-                  </div>
-                </>
-              )}
-            </div>
-            <button onClick={guardarTactica} className="flex items-center justify-center w-10 h-10 rounded-xl bg-accent-500/10 text-accent-400 border border-accent-500/20 transition-all cursor-pointer active:scale-90" title="Guardar">
-              <Save size={18} />
-            </button>
-            <button onClick={reiniciar} className="flex items-center justify-center w-10 h-10 rounded-xl bg-surface-700/60 text-text-secondary border border-border transition-all cursor-pointer active:scale-90" title="Reiniciar">
-              <RotateCcw size={18} />
-            </button>
-            <div className="relative">
-              <button
-                onClick={() => { setIsExportOpen(!isExportOpen); setIsTeamConfigOpen(false); setIsShareOpen(false) }}
-                className="flex items-center justify-center w-10 h-10 rounded-xl bg-blue-600/10 text-blue-400 border border-blue-500/20 transition-all cursor-pointer active:scale-90"
-                title="Exportar"
-              >
-                <Download size={18} />
-              </button>
-              {isExportOpen && (
-                <>
-                  <div className="fixed inset-0 z-[90]" onClick={() => setIsExportOpen(false)} />
-                  <div className="popover-mobile rounded-xl border border-border bg-surface-700 p-1.5 shadow-2xl z-[100] animate-in fade-in slide-in-from-bottom-2 duration-150">
-                    {exportContent}
-                  </div>
-                </>
-              )}
-            </div>
-            <div className="relative">
-              <button
-                onClick={() => { generateShareLink(); setIsTeamConfigOpen(false); setIsExportOpen(false) }}
-                className="flex items-center justify-center w-10 h-10 rounded-xl bg-emerald-600/10 text-emerald-400 border border-emerald-500/20 transition-all cursor-pointer active:scale-90"
-                title="Compartir"
-              >
-                <Link2 size={18} />
-              </button>
-              {isShareOpen && (
-                <>
-                  <div className="fixed inset-0 z-[90]" onClick={() => setIsShareOpen(false)} />
-                  <div className="popover-mobile rounded-xl border border-border bg-surface-700 p-4 shadow-2xl z-[100] animate-in fade-in slide-in-from-bottom-2 duration-150">
-                    {shareContent}
-                  </div>
-                </>
-              )}
-            </div>
-          </div>
-        </nav>
+        <footer className="text-center py-3 text-[10px] text-text-muted shrink-0 border-t border-white/5 bg-surface-800/40 safe-area-pb select-none" style={{ paddingBottom: 'max(0.5rem, env(safe-area-inset-bottom))' }}>
+          Junior y TeacherdhApps por nuestro amor al futbol. PizarrApp ® 2026.
+        </footer>
+        <FloatingMenu
+          onAddTool={handleAddTool}
+          onClearExtras={clearExtras}
+          onGuardar={guardarTactica}
+          onReiniciar={reiniciar}
+          generateShareLink={generateShareLink}
+          isTeamConfigOpen={isTeamConfigOpen}
+          setIsTeamConfigOpen={setIsTeamConfigOpen}
+          teamConfigContent={teamConfigContent}
+          isExportOpen={isExportOpen}
+          setIsExportOpen={setIsExportOpen}
+          exportContent={exportContent}
+          isShareOpen={isShareOpen}
+          setIsShareOpen={setIsShareOpen}
+          shareContent={shareContent}
+        />
         <div
           className={`fixed bottom-20 left-1/2 -translate-x-1/2 z-50
                       px-4 py-2 rounded-xl text-sm font-medium
@@ -1410,102 +1390,6 @@ function App() {
             </span>
           </div>
         </div>
-        <Toolbar onAdd={handleAddTool} onClearExtras={clearExtras} isMobile={false} />
-        <div className="flex items-center gap-2">
-          <div className="relative">
-            <button
-              id="btn-equipos"
-              onClick={() => setIsTeamConfigOpen(!isTeamConfigOpen)}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg border text-xs font-semibold transition-all duration-150 cursor-pointer active:scale-95 ${
-                isTeamConfigOpen
-                  ? 'bg-accent-500/20 text-accent-400 border-accent-500/30 shadow-[0_0_10px_rgba(99,102,241,0.15)]'
-                  : 'bg-surface-700/60 text-text-secondary hover:text-text-primary border-border hover:bg-surface-700'
-              }`}
-              title="Configurar alineación y uniformes"
-            >
-              <Users size={14} className="shrink-0" />
-              <span className="hidden md:inline">Alineaciones</span>
-              <ChevronDown size={13} className={`transition-transform duration-200 shrink-0 ${isTeamConfigOpen ? 'rotate-180' : ''}`} />
-            </button>
-            {isTeamConfigOpen && (
-              <>
-                <div className="fixed inset-0 z-[90]" onClick={() => setIsTeamConfigOpen(false)} />
-                <div className="absolute right-0 mt-2 w-[320px] rounded-xl border border-border bg-surface-700 p-4 shadow-2xl z-[100] animate-in fade-in slide-in-from-top-1 duration-150 select-none">
-                  <h3 className="text-[10px] font-bold uppercase tracking-wider text-text-secondary mb-3 flex items-center gap-1.5">
-                    <Users size={12} /> Alineaciones y Equipos
-                  </h3>
-                  {teamConfigContent}
-                </div>
-              </>
-            )}
-          </div>
-          <button
-            id="btn-guardar"
-            onClick={guardarTactica}
-            className="flex items-center justify-center w-9 h-9 rounded-lg
-                       bg-accent-500/10 text-accent-400 hover:bg-accent-500/20 hover:text-accent-300
-                       border border-accent-500/20 hover:border-accent-500/40 transition-all duration-150 cursor-pointer active:scale-90"
-            title="Guardar Táctica"
-          >
-            <Save size={15} />
-          </button>
-          <button
-            id="btn-reiniciar"
-            onClick={reiniciar}
-            className="flex items-center justify-center w-9 h-9 rounded-lg
-                       bg-surface-700/60 text-text-secondary hover:text-text-primary hover:bg-surface-700
-                       border border-border transition-all duration-150 cursor-pointer active:scale-90"
-            title="Reiniciar Cancha"
-          >
-            <RotateCcw size={15} />
-          </button>
-          <div className="relative">
-            <button
-              id="btn-exportar"
-              onClick={() => setIsExportOpen(!isExportOpen)}
-              className="flex items-center justify-center w-9 h-9 rounded-lg
-                         bg-blue-600/10 text-blue-400 hover:bg-blue-600/20 hover:text-blue-300
-                         border border-blue-500/20 hover:border-blue-500/40 transition-all duration-150 cursor-pointer active:scale-90"
-              title="Exportar / Importar"
-            >
-              <Download size={15} />
-            </button>
-            {isExportOpen && (
-              <>
-                <div className="fixed inset-0 z-[90]" onClick={() => setIsExportOpen(false)} />
-                <div className="absolute right-0 mt-2 w-48 rounded-xl border border-border bg-surface-700 p-1.5 shadow-2xl z-[100] animate-in fade-in slide-in-from-top-1 duration-150">
-                  {exportContent}
-                </div>
-              </>
-            )}
-          </div>
-          <div className="relative">
-            <button
-              id="btn-compartir"
-              onClick={generateShareLink}
-              className="flex items-center justify-center w-9 h-9 rounded-lg
-                         bg-emerald-600/10 text-emerald-400 hover:bg-emerald-600/20 hover:text-emerald-300
-                         border border-emerald-500/20 hover:border-emerald-500/40 transition-all duration-150 cursor-pointer active:scale-90"
-              title="Compartir táctica (generar enlace)"
-            >
-              <Link2 size={15} />
-            </button>
-            {isShareOpen && (
-              <>
-                <div className="fixed inset-0 z-[90]" onClick={() => setIsShareOpen(false)} />
-                <div className="absolute right-0 mt-2 w-[340px] rounded-xl border border-border bg-surface-700 p-4 shadow-2xl z-[100] animate-in fade-in slide-in-from-top-1 duration-150 select-none">
-                  {shareContent}
-                  <div className="mt-3 pt-2.5 border-t border-white/5">
-                    <p className="text-[10px] text-text-muted leading-relaxed">
-                      <span className="font-semibold text-text-secondary">💡 Tip:</span>{' '}
-                      Guarda este enlace en tus marcadores o compártelo por WhatsApp, correo o cualquier medio. La táctica viaja dentro del enlace, sin necesidad de cuenta ni servidor.
-                    </p>
-                  </div>
-                </div>
-              </>
-            )}
-          </div>
-        </div>
       </header>
       <main className="flex-1 flex items-center justify-center p-4 sm:p-6 lg:p-10">
         <div className="relative w-full max-w-6xl">
@@ -1557,11 +1441,28 @@ function App() {
       </div>
 
       {/* ── Footer ─────────────────────────────────────────────────────── */}
-      <footer className="flex items-center justify-center px-6 py-3 border-t border-border text-xs text-text-muted">
-        PizarrApp v0.1.0
+      <footer className="flex items-center justify-center px-6 py-3 border-t border-border text-xs text-text-muted select-none text-center">
+        Junior y TeacherdhApps por nuestro amor al futbol. PizarrApp ® 2026.
       </footer>
+      <FloatingMenu
+        onAddTool={handleAddTool}
+        onClearExtras={clearExtras}
+        onGuardar={guardarTactica}
+        onReiniciar={reiniciar}
+        generateShareLink={generateShareLink}
+        isTeamConfigOpen={isTeamConfigOpen}
+        setIsTeamConfigOpen={setIsTeamConfigOpen}
+        teamConfigContent={teamConfigContent}
+        isExportOpen={isExportOpen}
+        setIsExportOpen={setIsExportOpen}
+        exportContent={exportContent}
+        isShareOpen={isShareOpen}
+        setIsShareOpen={setIsShareOpen}
+        shareContent={shareContent}
+      />
     </div>
   )
 }
 
 export default App
+
