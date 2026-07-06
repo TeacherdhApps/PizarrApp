@@ -98,8 +98,14 @@ export default function FloatingMenu({
     if (e.button !== 0) return; // Left click only
 
     const target = e.target as HTMLElement;
-    // Don't drag if clicking buttons, inputs, etc.
-    if (target.closest('button') || target.closest('input') || target.closest('select') || target.closest('a')) {
+    // Don't drag if clicking buttons, inputs, labels, etc.
+    if (
+      target.closest('button') || 
+      target.closest('input') || 
+      target.closest('select') || 
+      target.closest('label') || 
+      target.closest('a')
+    ) {
       return;
     }
 
