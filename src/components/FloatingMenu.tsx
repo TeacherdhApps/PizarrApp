@@ -299,7 +299,7 @@ export default function FloatingMenu({
                 </button>
                 
                 {isExtrasOpen && (
-                  <div className={`absolute z-[100] border border-border bg-surface-700 p-2 shadow-2xl rounded-xl w-56 animate-in fade-in duration-150 ${popoverPositionClass}`}>
+                  <div className={`z-[100] border border-border bg-surface-700 p-2 shadow-2xl rounded-xl animate-in fade-in duration-150 md:absolute md:w-56 ${popoverPositionClass} popover-mobile`}>
                     <h3 className="text-[10px] font-bold uppercase tracking-wider text-text-secondary px-2.5 py-1.5 border-b border-white/5 mb-1.5">
                       Elementos adicionales
                     </h3>
@@ -355,7 +355,7 @@ export default function FloatingMenu({
                   <Users size={16} />
                 </button>
                 {isTeamConfigOpen && (
-                  <div className={`absolute z-[100] w-[320px] rounded-xl border border-border bg-surface-700 p-4 shadow-2xl animate-in fade-in duration-150 ${popoverPositionClass}`}>
+                  <div className={`z-[100] rounded-xl border border-border bg-surface-700 p-4 shadow-2xl animate-in fade-in duration-150 md:absolute md:w-[320px] ${popoverPositionClass} popover-mobile`}>
                     <h3 className="text-[10px] font-bold uppercase tracking-wider text-text-secondary mb-3 flex items-center gap-1.5">
                       <Users size={12} /> Alineaciones y Equipos
                     </h3>
@@ -396,7 +396,7 @@ export default function FloatingMenu({
                   <Download size={16} />
                 </button>
                 {isExportOpen && (
-                  <div className={`absolute z-[100] w-48 rounded-xl border border-border bg-surface-700 p-1.5 shadow-2xl animate-in fade-in duration-150 ${popoverPositionClass}`}>
+                  <div className={`z-[100] rounded-xl border border-border bg-surface-700 p-1.5 shadow-2xl animate-in fade-in duration-150 md:absolute md:w-48 ${popoverPositionClass} popover-mobile`}>
                     {exportContent}
                   </div>
                 )}
@@ -416,7 +416,7 @@ export default function FloatingMenu({
                   <Link2 size={16} />
                 </button>
                 {isShareOpen && (
-                  <div className={`absolute z-[100] w-[340px] rounded-xl border border-border bg-surface-700 p-4 shadow-2xl animate-in fade-in duration-150 ${popoverPositionClass}`}>
+                  <div className={`z-[100] rounded-xl border border-border bg-surface-700 p-4 shadow-2xl animate-in fade-in duration-150 md:absolute md:w-[340px] ${popoverPositionClass} popover-mobile`}>
                     {shareContent}
                     <div className="mt-3 pt-2.5 border-t border-white/5">
                       <p className="text-[10px] text-text-muted leading-relaxed">
