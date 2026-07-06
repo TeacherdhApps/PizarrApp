@@ -35,6 +35,11 @@ export interface TacticaGuardada {
   elements: FieldElement[];
   arrows: ArrowItem[];
   tacticName?: string;
+  nombreLocal?: string;
+  nombreVisitante?: string;
+  golesLocal?: number;
+  golesVisitante?: number;
+  mostrarMarcador?: boolean;
 }
 
 export function uid(): string {
@@ -90,7 +95,12 @@ export function isValidTacticaGuardada(data: unknown): data is TacticaGuardada {
     typeof o.colorVisitante === 'string' && o.colorVisitante.length <= 20 &&
     Array.isArray(o.elements) && o.elements.every(isValidFieldElement) &&
     Array.isArray(o.arrows) && o.arrows.every(isValidArrowItem) &&
-    (o.tacticName === undefined || (typeof o.tacticName === 'string' && o.tacticName.length <= 100))
+    (o.tacticName === undefined || (typeof o.tacticName === 'string' && o.tacticName.length <= 100)) &&
+    (o.nombreLocal === undefined || (typeof o.nombreLocal === 'string' && o.nombreLocal.length <= 50)) &&
+    (o.nombreVisitante === undefined || (typeof o.nombreVisitante === 'string' && o.nombreVisitante.length <= 50)) &&
+    (o.golesLocal === undefined || typeof o.golesLocal === 'number') &&
+    (o.golesVisitante === undefined || typeof o.golesVisitante === 'number') &&
+    (o.mostrarMarcador === undefined || typeof o.mostrarMarcador === 'boolean')
   );
 }
 

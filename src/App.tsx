@@ -145,6 +145,11 @@ function App() {
       colorVisitante: saved?.colorVisitante ?? '#dc2626',
       elements: saved?.elements ? deepClone(saved.elements) : [],
       arrows: saved?.arrows ? deepClone(saved.arrows) : [],
+      nombreLocal: saved?.nombreLocal ?? 'Local',
+      nombreVisitante: saved?.nombreVisitante ?? 'Visitante',
+      golesLocal: saved?.golesLocal ?? 0,
+      golesVisitante: saved?.golesVisitante ?? 0,
+      mostrarMarcador: saved?.mostrarMarcador ?? false,
     }
   })
 
@@ -154,6 +159,11 @@ function App() {
   const [colorVisitante, setColorVisitante] = useState(initialData.colorVisitante)
   const [elements, setElements] = useState<FieldElement[]>(initialData.elements)
   const [arrows, setArrows] = useState<ArrowItem[]>(initialData.arrows)
+  const [nombreLocal, setNombreLocal] = useState(initialData.nombreLocal)
+  const [nombreVisitante, setNombreVisitante] = useState(initialData.nombreVisitante)
+  const [golesLocal, setGolesLocal] = useState(initialData.golesLocal)
+  const [golesVisitante, setGolesVisitante] = useState(initialData.golesVisitante)
+  const [mostrarMarcador, setMostrarMarcador] = useState(initialData.mostrarMarcador)
   const [tacticName, setTacticName] = useState(() => {
     const saved = loadFromLS()
     return saved?.tacticName ?? 'Pizarra de Tácticas'
@@ -254,6 +264,11 @@ function App() {
         setElements(deepClone(parsed.elements))
         setArrows(deepClone(parsed.arrows))
         if (parsed.tacticName) setTacticName(parsed.tacticName)
+        if (parsed.nombreLocal) setNombreLocal(parsed.nombreLocal)
+        if (parsed.nombreVisitante) setNombreVisitante(parsed.nombreVisitante)
+        if (parsed.golesLocal !== undefined) setGolesLocal(parsed.golesLocal)
+        if (parsed.golesVisitante !== undefined) setGolesVisitante(parsed.golesVisitante)
+        if (parsed.mostrarMarcador !== undefined) setMostrarMarcador(parsed.mostrarMarcador)
         setResetKey((k) => k + 1)
         window.history.replaceState(null, '', window.location.pathname)
         showToast('✓ Táctica cargada desde enlace')
@@ -267,6 +282,7 @@ function App() {
   const generateShareLink = async () => {
     const data: TacticaGuardada = {
       local, visitante, colorLocal, colorVisitante, elements, arrows, tacticName,
+      nombreLocal, nombreVisitante, golesLocal, golesVisitante, mostrarMarcador,
     }
     const json = JSON.stringify(data)
     const compressed = await compressToUrlSafe(json)
@@ -456,6 +472,11 @@ function App() {
       elements,
       arrows,
       tacticName,
+      nombreLocal,
+      nombreVisitante,
+      golesLocal,
+      golesVisitante,
+      mostrarMarcador,
     }
     localStorage.setItem(LS_KEY, JSON.stringify(data))
     showToast('✓ Táctica guardada')
@@ -467,6 +488,11 @@ function App() {
     setVisitante(deepClone(formacionVisitante))
     setColorLocal('#2563eb')
     setColorVisitante('#dc2626')
+    setNombreLocal('Local')
+    setNombreVisitante('Visitante')
+    setGolesLocal(0)
+    setGolesVisitante(0)
+    setMostrarMarcador(false)
     setElements([])
     setArrows([])
     localStorage.removeItem(LS_KEY)
@@ -1009,9 +1035,79 @@ function App() {
     showToast('✓ PDF descargado')
   }
 
-  /* ── Shared field content (used in both mobile and desktop) ─────── */
   const fieldContent = (
     <Cancha ref={canchaRef} isVertical={isMobile}>
+      {/* Marcador Táctico */}
+      {mostrarMarcador && (
+        <div 
+          className="absolute top-[5%] left-1/2 -translate-x-1/2 z-40
+                     backdrop-blur-md bg-surface-800/80 border border-border/80 
+                     shadow-[0_8px_32px_rgba(0,0,0,0.4)] rounded-xl px-3 py-1.5 
+                     flex items-center gap-3 select-none text-[11px]
+                     animate-in fade-in slide-in-from-top-2 duration-200"
+        >
+          {/* Local Team */}
+          <div className="flex items-center gap-1.5">
+            <span className="w-2.5 h-2.5 rounded-full border border-white/10 shrink-0" style={{ backgroundColor: colorLocal }} />
+            <input
+              type="text"
+              value={nombreLocal}
+              onChange={(e) => setNombreLocal(e.target.value)}
+              className="text-xs font-bold text-text-primary bg-transparent border-none outline-none focus:bg-surface-700/60 focus:ring-1 focus:ring-accent-500/30 px-1 py-0.5 rounded-md w-14 sm:w-20 text-right font-sans truncate"
+              title="Nombre del equipo local"
+            />
+            <div className="flex items-center gap-1 shrink-0">
+              <button 
+                onClick={() => setGolesLocal(Math.max(0, golesLocal - 1))}
+                className="w-4 h-4 flex items-center justify-center rounded bg-surface-700/60 hover:bg-surface-600 border border-border text-text-secondary cursor-pointer active:scale-90 transition-transform"
+                title="Restar gol"
+              >
+                <Minus size={8} strokeWidth={3} />
+              </button>
+              <span className="text-xs font-black text-accent-400 font-mono w-4 text-center">{golesLocal}</span>
+              <button 
+                onClick={() => setGolesLocal(golesLocal + 1)}
+                className="w-4 h-4 flex items-center justify-center rounded bg-surface-700/60 hover:bg-surface-600 border border-border text-text-secondary cursor-pointer active:scale-90 transition-transform"
+                title="Sumar gol"
+              >
+                <Plus size={8} strokeWidth={3} />
+              </button>
+            </div>
+          </div>
+
+          {/* VS Divider */}
+          <span className="text-[9px] font-black tracking-wider text-text-muted select-none">VS</span>
+
+          {/* Visitante Team */}
+          <div className="flex items-center gap-1.5">
+            <div className="flex items-center gap-1 shrink-0">
+              <button 
+                onClick={() => setGolesVisitante(Math.max(0, golesVisitante - 1))}
+                className="w-4 h-4 flex items-center justify-center rounded bg-surface-700/60 hover:bg-surface-600 border border-border text-text-secondary cursor-pointer active:scale-90 transition-transform"
+                title="Restar gol"
+              >
+                <Minus size={8} strokeWidth={3} />
+              </button>
+              <span className="text-xs font-black text-accent-400 font-mono w-4 text-center">{golesVisitante}</span>
+              <button 
+                onClick={() => setGolesVisitante(golesVisitante + 1)}
+                className="w-4 h-4 flex items-center justify-center rounded bg-surface-700/60 hover:bg-surface-600 border border-border text-text-secondary cursor-pointer active:scale-90 transition-transform"
+                title="Sumar gol"
+              >
+                <Plus size={8} strokeWidth={3} />
+              </button>
+            </div>
+            <input
+              type="text"
+              value={nombreVisitante}
+              onChange={(e) => setNombreVisitante(e.target.value)}
+              className="text-xs font-bold text-text-primary bg-transparent border-none outline-none focus:bg-surface-700/60 focus:ring-1 focus:ring-accent-500/30 px-1 py-0.5 rounded-md w-14 sm:w-20 text-left font-sans truncate"
+              title="Nombre del equipo visitante"
+            />
+            <span className="w-2.5 h-2.5 rounded-full border border-white/10 shrink-0" style={{ backgroundColor: colorVisitante }} />
+          </div>
+        </div>
+      )}
       {arrows.map((arr) => {
         const mappedArrow = isMobile
           ? {
@@ -1122,6 +1218,20 @@ function App() {
   /* ── Shared team-config popover content ─────────────────────────── */
   const teamConfigContent = (
     <div className="space-y-4">
+      {/* SCOREBOARD TOGGLE */}
+      <div className="flex items-center justify-between pb-3 border-b border-white/5">
+        <span className="text-xs font-semibold text-text-primary">Mostrar marcador táctico</span>
+        <label className="relative inline-flex items-center cursor-pointer select-none">
+          <input
+            type="checkbox"
+            checked={mostrarMarcador}
+            onChange={(e) => setMostrarMarcador(e.target.checked)}
+            className="sr-only peer"
+          />
+          <div className="w-8 h-4.5 bg-surface-600 rounded-full peer peer-focus:ring-1 peer-focus:ring-accent-500/30 peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-0.5 after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-3.5 after:w-3.5 after:transition-all peer-checked:bg-accent-500"></div>
+        </label>
+      </div>
+
       {/* LOCAL TEAM PANEL */}
       <div className="space-y-2 pb-3 border-b border-white/5">
         <div className="flex items-center justify-between">
