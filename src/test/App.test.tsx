@@ -3,14 +3,14 @@ import { render, screen, fireEvent } from '@testing-library/react';
 import App from '../App';
 
 describe('App Component', () => {
-  it('renders title and tool buttons', async () => {
+  it('renders title and tool buttons', () => {
     render(<App />);
     
     // Check that header/footer title contains "PizarrApp"
     expect(screen.getByText(/PizarrApp/)).toBeInTheDocument();
     
     // Open the Extras dropdown first
-    const extrasBtn = await screen.findByTitle('Extras');
+    const extrasBtn = screen.getByTitle('Extras');
     expect(extrasBtn).toBeInTheDocument();
     fireEvent.click(extrasBtn);
 
@@ -21,11 +21,11 @@ describe('App Component', () => {
     expect(screen.getByText('Texto')).toBeInTheDocument();
   });
 
-  it('can switch team presets between Fútbol 7 and Fútbol 11', async () => {
+  it('can switch team presets between Fútbol 7 and Fútbol 11', () => {
     render(<App />);
 
     // Open the Team Configuration panel first
-    const configBtn = await screen.findByTitle('Configurar alineación y uniformes');
+    const configBtn = screen.getByTitle('Configurar alineación y uniformes');
     expect(configBtn).toBeInTheDocument();
     fireEvent.click(configBtn);
 
@@ -40,15 +40,15 @@ describe('App Component', () => {
     expect(screen.getAllByText('GK').length).toBeGreaterThan(0);
   });
 
-  it('can add a local player via the + button', async () => {
+  it('can add a local player via the + button', () => {
     render(<App />);
 
     // Open the Team Configuration panel first
-    const configBtn = await screen.findByTitle('Configurar alineación y uniformes');
+    const configBtn = screen.getByTitle('Configurar alineación y uniformes');
     expect(configBtn).toBeInTheDocument();
     fireEvent.click(configBtn);
 
-    const addLocalBtn = await screen.findByTitle('Añadir jugador local');
+    const addLocalBtn = screen.getByTitle('Añadir jugador local');
     expect(addLocalBtn).toBeInTheDocument();
 
     // Visitor team has player number 5 (Stones), so '5' is found once initially

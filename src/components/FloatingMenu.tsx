@@ -52,37 +52,33 @@ export default function FloatingMenu({
   setIsTeamConfigOpen,
   teamConfigContent
 }: FloatingMenuProps) {
-  const isMounted = true;
-  const [isExpanded, setIsExpanded] = useState(() => typeof process !== 'undefined' && process.env.NODE_ENV === 'test');
+  const [isMounted, setIsMounted] = useState(false);
+  const [isExpanded, setIsExpanded] = useState(false);
   const [isExtrasOpen, setIsExtrasOpen] = useState(false);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
-  const [position, setPosition] = useState(() => {
-    // Center of the collapsed circle (w-14 h-14 -> width 56)
-    const initialX = typeof window !== 'undefined' ? window.innerWidth - 80 + 28 : 0;
-    const initialY = typeof window !== 'undefined' ? window.innerHeight - 150 + 28 : 0;
-    return { x: initialX, y: initialY };
-  });
+  const [position, setPosition] = useState({ x: 0, y: 0 });
 
   const containerRef = useRef<HTMLDivElement>(null);
   const isDraggingRef = useRef(false);
   const dragStartRef = useRef({ x: 0, y: 0 });
   const clickStartRef = useRef({ x: 0, y: 0 });
-  const clickTimeRef = useRef(0);
 
-
+  useEffect(() => {
+    // Initial position on mount (bottom right of the window)
+    const initialX = window.innerWidth - 80;
+    const initialY = window.innerHeight - 150;
+    setPosition({ x: initialX, y: initialY });
+    setIsMounted(true);
+  }, []);
 
   useEffect(() => {
     const handleResize = () => {
       setPosition((prev) => {
-        const width = containerRef.current?.offsetWidth || 56;
-        const height = containerRef.current?.offsetHeight || 56;
-        const minX = width / 2 + 8;
-        const maxX = window.innerWidth - width / 2 - 8;
-        const minY = height / 2 + 8;
-        const maxY = window.innerHeight - height / 2 - 8;
+        const maxX = window.innerWidth - 72;
+        const maxY = window.innerHeight - 72;
         return {
-          x: Math.max(minX, Math.min(maxX, prev.x)),
-          y: Math.max(minY, Math.min(maxY, prev.y)),
+          x: Math.max(16, Math.min(maxX, prev.x)),
+          y: Math.max(16, Math.min(maxY, prev.y)),
         };
       });
     };
@@ -113,13 +109,9 @@ export default function FloatingMenu({
       return;
     }
 
-    e.preventDefault();
     isDraggingRef.current = true;
     clickStartRef.current = { x: e.clientX, y: e.clientY };
-    clickTimeRef.current = Date.now();
     dragStartRef.current = { x: e.clientX - position.x, y: e.clientY - position.y };
-
-    document.body.style.touchAction = 'none';
 
     if (containerRef.current) {
       containerRef.current.setPointerCapture(e.pointerId);
@@ -133,18 +125,16 @@ export default function FloatingMenu({
     const newX = e.clientX - dragStartRef.current.x;
     const newY = e.clientY - dragStartRef.current.y;
 
-    // Clamp coordinates relative to center position
+    // Clamp coordinates to screen dimensions
     const width = containerRef.current?.offsetWidth || 56;
     const height = containerRef.current?.offsetHeight || 56;
     
-    const minX = width / 2 + 8;
-    const maxX = window.innerWidth - width / 2 - 8;
-    const minY = height / 2 + 8;
-    const maxY = window.innerHeight - height / 2 - 8;
+    const maxX = window.innerWidth - width - 16;
+    const maxY = window.innerHeight - height - 16;
 
     setPosition({
-      x: Math.max(minX, Math.min(maxX, newX)),
-      y: Math.max(minY, Math.min(maxY, newY)),
+      x: Math.max(16, Math.min(maxX, newX)),
+      y: Math.max(16, Math.min(maxY, newY)),
     });
   };
 
@@ -152,26 +142,23 @@ export default function FloatingMenu({
     if (!isDraggingRef.current) return;
 
     isDraggingRef.current = false;
-    document.body.style.touchAction = '';
-
     if (containerRef.current) {
       try {
         containerRef.current.releasePointerCapture(e.pointerId);
-      } catch {
+      } catch (err) {
         // Ignored
       }
     }
 
-    const duration = Date.now() - clickTimeRef.current;
     const dx = e.clientX - clickStartRef.current.x;
     const dy = e.clientY - clickStartRef.current.y;
     const distance = Math.sqrt(dx * dx + dy * dy);
 
-    // If collapsed, clicking/tapping the container expands it.
-    // Tapping allows minor drag/duration shifts common on mobile touches.
-    if (!isExpanded) {
-      if (distance < 15 || duration < 250) {
-        setIsExpanded(true);
+    // If dragged less than 6px, treat it as a click toggle
+    if (distance < 6) {
+      setIsExpanded((prev) => !prev);
+      if (isExpanded) {
+        closeAll();
       }
     }
   };
@@ -256,14 +243,13 @@ export default function FloatingMenu({
         onPointerMove={handlePointerMove}
         onPointerUp={handlePointerUp}
         style={{
-          left: 0,
-          top: 0,
-          transform: `translate3d(calc(${position.x}px - 50%), calc(${position.y}px - 50%), 0)`,
+          left: position.x,
+          top: position.y,
           touchAction: 'none',
         }}
         className={`fixed z-[95] transition-shadow duration-200 select-none ${
           isExpanded 
-            ? 'p-2 rounded-2xl bg-surface-800/90 border border-border backdrop-blur-md shadow-2xl flex items-center gap-2' 
+            ? 'p-2 rounded-2xl bg-surface-800/90 border border-border backdrop-blur-md shadow-2xl flex items-center gap-2 animate-in fade-in zoom-in-95 duration-150' 
             : 'w-14 h-14 rounded-full bg-gradient-to-br from-accent-500 to-accent-600 border border-accent-400/30 shadow-[0_4px_20px_rgba(99,102,241,0.4)] flex items-center justify-center cursor-grab active:cursor-grabbing hover:scale-105 active:scale-95 transition-all duration-150'
         }`}
       >
@@ -358,7 +344,7 @@ export default function FloatingMenu({
                       ? 'bg-accent-500/20 text-accent-400 border-accent-500/30'
                       : 'bg-surface-700/60 text-text-secondary border-border hover:bg-surface-700 hover:text-text-primary'
                   }`}
-                  title="Configurar alineación y uniformes"
+                  title="Alineaciones"
                 >
                   <Users size={16} />
                 </button>
