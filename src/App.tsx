@@ -2,11 +2,12 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import Cancha from './components/Cancha'
 import FichaJugador from './components/FichaJugador'
 import FloatingMenu from './components/FloatingMenu'
+import DesktopSidebar from './components/DesktopSidebar'
 import DraggableElement from './components/DraggableElement'
 import InteractiveArrow from './components/InteractiveArrow'
 import { uid, isValidTacticaGuardada } from './types'
 import type { Jugador, FieldElement, ArrowItem, TacticaGuardada, ElementType } from './types'
-import { Plus, Minus, Pencil, Maximize, Minimize, Eye, EyeOff } from 'lucide-react'
+import { Plus, Minus, Pencil, Maximize, Minimize } from 'lucide-react'
 
 const LS_KEY = 'pizarra-tactica'
 
@@ -1530,7 +1531,7 @@ function App() {
   return (
     <div className="flex flex-col min-h-dvh">
       {newScoreboard}
-      <header className="sticky top-0 z-[100] flex items-center justify-between gap-4 px-6 py-2.5 bg-surface-800/60 backdrop-blur-md border-b border-white/5 shadow-[0_2px_15px_rgba(0,0,0,0.2)] select-none animate-in fade-in duration-300">
+      <header className="sticky top-0 z-[100] flex items-center justify-between gap-4 px-6 py-2.5 mr-[260px] bg-surface-800/60 backdrop-blur-md border-b border-white/5 shadow-[0_2px_15px_rgba(0,0,0,0.2)] select-none animate-in fade-in duration-300">
         <div className="flex items-center gap-3">
           <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-accent-400 to-accent-600 flex items-center justify-center shadow-lg shadow-accent-500/25 shrink-0">
             <svg
@@ -1559,33 +1560,25 @@ function App() {
                   setTacticName(newName);
                   localStorage.setItem('pizarra_tactica_name', newName);
                 }}
-                className="text-xs font-semibold text-text-primary bg-transparent border-none outline-none focus:bg-surface-700/60 focus:ring-1 focus:ring-accent-500/30 px-1 py-0.5 rounded-md max-w-[140px] sm:max-w-[200px] transition-all"
+                className="text-sm font-semibold text-text-primary bg-transparent border-none outline-none focus:bg-surface-700/60 focus:ring-1 focus:ring-accent-500/30 px-1.5 py-0.5 rounded-md max-w-[300px] transition-all"
                 title="Editar nombre de táctica"
               />
-              <Pencil size={11} className="text-text-muted hover:text-text-secondary cursor-pointer shrink-0" />
+              <Pencil size={12} className="text-text-muted hover:text-text-secondary cursor-pointer shrink-0" />
             </div>
-            <span className="text-[9px] text-emerald-400/80 font-medium px-1 flex items-center gap-1 select-none">
+            <span className="text-[9px] text-emerald-400/80 font-medium px-1.5 flex items-center gap-1 select-none">
               <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
               Autoguardado
             </span>
           </div>
         </div>
-        <div className="flex items-center gap-2">
-          <button
-            onClick={() => setMostrarMarcador((prev) => !prev)}
-            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold border transition-all duration-150 cursor-pointer active:scale-95 ${
-              mostrarMarcador
-                ? 'bg-accent-500/20 text-accent-400 border-accent-500/30 shadow-[0_0_10px_rgba(99,102,241,0.15)]'
-                : 'bg-surface-700/60 text-text-secondary hover:text-text-primary border-border hover:bg-surface-700'
-            }`}
-            title="Mostrar/Ocultar marcador"
-          >
-            {mostrarMarcador ? <EyeOff size={14} className="text-accent-400" /> : <Eye size={14} className="text-text-secondary" />}
-            <span>Marcador</span>
-          </button>
+        <div className="flex items-center gap-2 text-xs text-text-muted select-none">
+          <span className="flex items-center gap-1.5">
+            <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+            16 : 9 · Campo de fútbol
+          </span>
         </div>
       </header>
-      <main className="flex-1 flex items-center justify-center p-4 sm:p-6 lg:p-10">
+      <main className="flex-1 flex items-center justify-center p-4 sm:p-6 lg:p-8 mr-[260px]">
         <div className="relative w-full max-w-6xl">
           <div
             ref={fieldContainerRef}
@@ -1611,21 +1604,12 @@ function App() {
               {isFullscreen ? <Minimize size={20} /> : <Maximize size={14} />}
             </button>
           </div>
-
-          {/* Bottom info strip */}
-          <div className="flex items-center justify-between mt-3 px-1 text-xs text-text-muted">
-            <span>16 : 9 · Campo de fútbol</span>
-            <span className="flex items-center gap-1.5">
-              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-              Listo
-            </span>
-          </div>
         </div>
       </main>
 
       {/* ── Toast notification ─────────────────────────────────────────── */}
       <div
-        className={`fixed bottom-6 left-1/2 -translate-x-1/2 z-50
+        className={`fixed bottom-6 left-1/2 -translate-x-[calc(50%+130px)] z-[100]
                     px-4 py-2 rounded-xl text-sm font-medium
                     bg-surface-700/95 text-text-primary border border-border
                     shadow-xl backdrop-blur-sm transition-all duration-300
@@ -1634,11 +1618,8 @@ function App() {
         {toast}
       </div>
 
-      {/* ── Footer ─────────────────────────────────────────────────────── */}
-      <footer className="flex items-center justify-center px-6 py-3 border-t border-border text-xs text-text-muted select-none text-center">
-        Junior y TeacherdhApps por nuestro amor al futbol. PizarrApp ® 2026.
-      </footer>
-      <FloatingMenu
+      {/* ── Desktop Sidebar ──────────────────────────────────────────── */}
+      <DesktopSidebar
         onAddTool={handleAddTool}
         onClearExtras={clearExtras}
         onGuardar={guardarTactica}
