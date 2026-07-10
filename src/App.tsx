@@ -1062,7 +1062,7 @@ function App() {
             onChange={(e) => setNombreLocal(e.target.value)}
             onPointerDown={(e) => e.stopPropagation()}
             onClick={(e) => e.stopPropagation()}
-            className="text-xs font-black uppercase tracking-wider text-white bg-black/20 border border-white/10 outline-none focus:bg-black/40 focus:ring-1 focus:ring-white/20 px-1.5 py-0.5 rounded flex-1 min-w-0 text-center sm:text-right font-sans truncate"
+            className="text-xs font-black uppercase tracking-wider text-white bg-black/20 border border-white/10 outline-none focus:bg-black/40 focus:ring-1 focus:ring-white/20 px-1.5 py-0.5 rounded flex-1 min-w-0 text-right font-sans truncate"
             title="Local"
           />
         </div>
@@ -1128,7 +1128,7 @@ function App() {
             onChange={(e) => setNombreVisitante(e.target.value)}
             onPointerDown={(e) => e.stopPropagation()}
             onClick={(e) => e.stopPropagation()}
-            className="text-xs font-black uppercase tracking-wider text-white bg-black/20 border border-white/10 outline-none focus:bg-black/40 focus:ring-1 focus:ring-white/20 px-1.5 py-0.5 rounded flex-1 min-w-0 text-center sm:text-left font-sans truncate"
+            className="text-xs font-black uppercase tracking-wider text-white bg-black/20 border border-white/10 outline-none focus:bg-black/40 focus:ring-1 focus:ring-white/20 px-1.5 py-0.5 rounded flex-1 min-w-0 text-left font-sans truncate"
             title="Visitante"
           />
           <span className="w-2.5 h-2.5 rounded-full border border-white/20 shrink-0 shadow-sm" style={{ backgroundColor: colorVisitante }} />

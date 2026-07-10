@@ -264,7 +264,7 @@ body {
     grid-template-columns: 1fr auto 1fr;
     grid-template-rows: auto auto;
     gap: 4px 8px;
-    padding: 6px 10px;
+    padding: 4px 8px;
     width: 100%;
     border-radius: 10px;
     align-items: center;
@@ -278,8 +278,8 @@ body {
     clip-path: none !important;
     border-radius: 6px;
     border-right: none;
-    min-height: 28px;
-    padding: 3px 6px;
+    min-height: 26px;
+    padding: 2px 4px;
   }
 
   .scoreboard-team-visitante {
@@ -289,8 +289,8 @@ body {
     clip-path: none !important;
     border-radius: 6px;
     border-left: none;
-    min-height: 28px;
-    padding: 3px 6px;
+    min-height: 26px;
+    padding: 2px 4px;
   }
 
   .scoreboard-vs-badge {
@@ -321,12 +321,12 @@ body {
 
   .digital-score-box {
     width: 52px;
-    height: 36px;
+    height: 34px;
     border-radius: 4px;
   }
 
   .digital-score-value {
-    font-size: 24px;
+    font-size: 22px;
     letter-spacing: 0.5px;
   }
 }
