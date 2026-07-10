@@ -1049,9 +1049,12 @@ function App() {
 
   const newScoreboard = mostrarMarcador && (
     <div className="digital-scoreboard-fixed select-none">
-      <div className="stadium-scoreboard relative">
-        {/* Left Team (Local) Banner - Red */}
-        <div className="scoreboard-team-local">
+      <div className="stadium-scoreboard">
+        {/* Left Team (Local) Banner */}
+        <div 
+          className="scoreboard-team-local" 
+          style={{ background: `linear-gradient(135deg, ${colorLocal} 0%, rgba(12, 12, 16, 0.4) 100%)` }}
+        >
           <span className="w-2.5 h-2.5 rounded-full border border-white/20 shrink-0 shadow-sm" style={{ backgroundColor: colorLocal }} />
           <input
             type="text"
@@ -1059,65 +1062,73 @@ function App() {
             onChange={(e) => setNombreLocal(e.target.value)}
             onPointerDown={(e) => e.stopPropagation()}
             onClick={(e) => e.stopPropagation()}
-            className="text-xs font-black uppercase tracking-wider text-white bg-black/30 border border-white/10 outline-none focus:bg-black/50 focus:ring-1 focus:ring-red-400/50 px-2 py-0.5 rounded w-16 sm:w-24 text-right font-sans truncate"
+            className="text-xs font-black uppercase tracking-wider text-white bg-black/20 border border-white/10 outline-none focus:bg-black/40 focus:ring-1 focus:ring-white/20 px-1.5 py-0.5 rounded flex-1 min-w-0 text-right font-sans truncate"
             title="Local"
           />
         </div>
 
-        {/* Center Panel (Scores and VS Badge) */}
-        <div className="scoreboard-center-panel">
-          <div className="scoreboard-vs-badge">VS</div>
-          
-          {/* Local Score Digit */}
+        {/* Local Score */}
+        <div className="scoreboard-score-local-container">
           <div 
             onClick={(e) => {
               e.stopPropagation()
-              setGolesLocal((prev) => (prev + 1) % 10)
+              setGolesLocal((prev) => (prev + 1) % 100)
             }}
             onContextMenu={(e) => {
               e.preventDefault()
-              setGolesLocal((prev) => (prev - 1 + 10) % 10)
+              setGolesLocal((prev) => (prev - 1 + 100) % 100)
             }}
             onPointerDown={(e) => e.stopPropagation()}
             className="digital-score-box"
             title="Sumar (Click) / Restar (Click derecho)"
           >
             <span className="digital-score-value">
-              {golesLocal % 10}
-            </span>
-          </div>
-
-          <span className="text-cyan-400/80 font-bold text-lg select-none">:</span>
-
-          {/* Visitante Score Digit */}
-          <div 
-            onClick={(e) => {
-              e.stopPropagation()
-              setGolesVisitante((prev) => (prev + 1) % 10)
-            }}
-            onContextMenu={(e) => {
-              e.preventDefault()
-              setGolesVisitante((prev) => (prev - 1 + 10) % 10)
-            }}
-            onPointerDown={(e) => e.stopPropagation()}
-            className="digital-score-box"
-            title="Sumar (Click) / Restar (Click derecho)"
-          >
-            <span className="digital-score-value">
-              {golesVisitante % 10}
+              {golesLocal.toString().padStart(2, '0')}
             </span>
           </div>
         </div>
 
-        {/* Right Team (Visitante) Banner - Blue */}
-        <div className="scoreboard-team-visitante">
+        {/* VS Divider / Badge */}
+        <div className="scoreboard-vs-badge">VS</div>
+
+        {/* Colon separator */}
+        <div className="scoreboard-colon-container">
+          <span className="animate-pulse">:</span>
+        </div>
+
+        {/* Visitante Score */}
+        <div className="scoreboard-score-visitante-container">
+          <div 
+            onClick={(e) => {
+              e.stopPropagation()
+              setGolesVisitante((prev) => (prev + 1) % 100)
+            }}
+            onContextMenu={(e) => {
+              e.preventDefault()
+              setGolesVisitante((prev) => (prev - 1 + 100) % 100)
+            }}
+            onPointerDown={(e) => e.stopPropagation()}
+            className="digital-score-box"
+            title="Sumar (Click) / Restar (Click derecho)"
+          >
+            <span className="digital-score-value">
+              {golesVisitante.toString().padStart(2, '0')}
+            </span>
+          </div>
+        </div>
+
+        {/* Right Team (Visitante) Banner */}
+        <div 
+          className="scoreboard-team-visitante" 
+          style={{ background: `linear-gradient(135deg, ${colorVisitante} 0%, rgba(12, 12, 16, 0.4) 100%)` }}
+        >
           <input
             type="text"
             value={nombreVisitante}
             onChange={(e) => setNombreVisitante(e.target.value)}
             onPointerDown={(e) => e.stopPropagation()}
             onClick={(e) => e.stopPropagation()}
-            className="text-xs font-black uppercase tracking-wider text-white bg-black/30 border border-white/10 outline-none focus:bg-black/50 focus:ring-1 focus:ring-blue-400/50 px-2 py-0.5 rounded w-16 sm:w-24 text-left font-sans truncate"
+            className="text-xs font-black uppercase tracking-wider text-white bg-black/20 border border-white/10 outline-none focus:bg-black/40 focus:ring-1 focus:ring-white/20 px-1.5 py-0.5 rounded flex-1 min-w-0 text-left font-sans truncate"
             title="Visitante"
           />
           <span className="w-2.5 h-2.5 rounded-full border border-white/20 shrink-0 shadow-sm" style={{ backgroundColor: colorVisitante }} />
@@ -1125,6 +1136,7 @@ function App() {
       </div>
     </div>
   )
+
 
   const fieldContent = (
     <Cancha ref={canchaRef} isVertical={isMobile}>
