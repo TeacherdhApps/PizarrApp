@@ -118,7 +118,7 @@ export default function FichaJugador({
 
     return createPortal(
       <div 
-        className="fixed inset-0 z-[200] flex items-end justify-center select-none"
+        className="fixed inset-0 z-[200] flex items-end justify-center"
         onPointerDown={(e) => e.stopPropagation()}
       >
         {/* Backdrop overlay */}
@@ -159,7 +159,7 @@ export default function FichaJugador({
                 type="text"
                 value={tempNombre}
                 onChange={(e) => setTempNombre(e.target.value)}
-                className="w-full px-3.5 py-3 rounded-xl bg-surface-900 text-text-primary text-sm font-semibold border border-border focus:ring-1 focus:ring-accent-500/30 outline-none transition-all"
+                className="w-full px-3.5 py-3 rounded-xl bg-surface-900 text-text-primary text-sm font-semibold border border-border focus:ring-1 focus:ring-accent-500/30 outline-none transition-all select-text"
                 placeholder="Nombre del jugador"
               />
             </div>
@@ -172,7 +172,7 @@ export default function FichaJugador({
                 inputMode="numeric"
                 value={tempNumero}
                 onChange={(e) => setTempNumero(e.target.value)}
-                className="w-full px-3.5 py-3 rounded-xl bg-surface-900 text-text-primary text-sm font-semibold border border-border focus:ring-1 focus:ring-accent-500/30 outline-none transition-all"
+                className="w-full px-3.5 py-3 rounded-xl bg-surface-900 text-text-primary text-sm font-semibold border border-border focus:ring-1 focus:ring-accent-500/30 outline-none transition-all select-text"
                 placeholder="Número"
               />
             </div>
@@ -269,7 +269,7 @@ export default function FichaJugador({
               }}
               onPointerDown={(e) => e.stopPropagation()}
               onClick={(e) => e.stopPropagation()}
-              className="absolute inset-0 m-auto w-8 h-8 rounded bg-black/85 text-white font-bold text-center border border-accent-400/40 outline-none z-50 flex items-center justify-center text-sm"
+              className="absolute inset-0 m-auto w-8 h-8 rounded bg-black/85 text-white font-bold text-center border border-accent-400/40 outline-none z-50 flex items-center justify-center text-sm select-text"
             />
           )}
           {/* Edit number button */}
@@ -374,7 +374,7 @@ export default function FichaJugador({
             onPointerDown={(e) => e.stopPropagation()}
             onClick={(e) => e.stopPropagation()}
             className="px-1 py-0 rounded bg-black/70 text-white font-semibold text-center
-                       border border-white/30 outline-none"
+                       border border-white/30 outline-none select-text"
             style={{
               fontSize: 'clamp(7px, 0.8vw, 11px)',
               width: 'clamp(40px, 4vw, 64px)',
