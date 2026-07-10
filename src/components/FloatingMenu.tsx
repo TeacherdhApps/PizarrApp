@@ -259,12 +259,12 @@ export default function FloatingMenu({
         className={`fixed z-[95] transition-shadow duration-200 select-none ${
           isExpanded 
             ? 'p-2 rounded-2xl bg-surface-800/90 border border-border backdrop-blur-md shadow-2xl flex items-center gap-2 animate-in fade-in zoom-in-95 duration-150' 
-            : 'w-14 h-14 rounded-full bg-gradient-to-br from-accent-500 to-accent-600 border border-accent-400/30 shadow-[0_4px_20px_rgba(99,102,241,0.4)] flex items-center justify-center cursor-grab active:cursor-grabbing hover:scale-105 active:scale-95 transition-all duration-150'
+            : 'w-14 h-14 rounded-full bg-white border border-slate-200 shadow-[0_4px_15px_rgba(0,0,0,0.35)] flex items-center justify-center cursor-grab active:cursor-grabbing hover:scale-105 active:scale-95 transition-all duration-150'
         }`}
       >
         {!isExpanded ? (
-          <div className="pointer-events-none flex items-center justify-center">
-            <Icon iconNode={soccerBall} size={28} strokeWidth={2} className="text-white animate-pulse" />
+          <div className="pointer-events-none flex items-center justify-center text-3xl animate-pulse select-none">
+            ⚽
           </div>
         ) : (
           <>
