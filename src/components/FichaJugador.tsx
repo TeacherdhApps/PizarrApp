@@ -103,7 +103,7 @@ export default function FichaJugador({
 
     return createPortal(
       <div 
-        className="fixed inset-0 z-[200] flex items-end justify-center md:items-center"
+        className="fixed inset-0 z-[200] flex items-center justify-center p-4"
         onPointerDown={(e) => e.stopPropagation()}
       >
         {/* Backdrop overlay */}
@@ -112,13 +112,11 @@ export default function FichaJugador({
           onClick={handleApplyChanges}
         />
 
-        {/* Dialog container (Bottom Sheet on mobile, Centered Modal on desktop) */}
+        {/* Dialog container (Centered Modal) */}
         <div 
-          className="relative w-full max-w-md md:max-w-sm bg-surface-800 border border-white/10 rounded-t-3xl md:rounded-2xl p-6 pb-8 z-10 flex flex-col gap-4 shadow-2xl animate-in slide-in-from-bottom md:zoom-in-95 duration-300 md:my-auto md:mx-4"
+          className="relative w-full max-w-sm bg-surface-800 border border-white/10 rounded-2xl p-6 pb-8 z-10 flex flex-col gap-4 shadow-2xl animate-in zoom-in-95 duration-200 max-h-[calc(100dvh-2rem)] overflow-y-auto"
           onClick={(e) => e.stopPropagation()}
         >
-          {/* Top handle bar (mobile only) */}
-          <div className="w-12 h-1 bg-white/20 rounded-full mx-auto mb-2 md:hidden" />
 
           {/* Header */}
           <div className="flex items-center gap-4">

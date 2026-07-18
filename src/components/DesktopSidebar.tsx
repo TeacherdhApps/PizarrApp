@@ -21,6 +21,7 @@ import {
   FolderOpen,
   Goal,
   Shield,
+  Pencil,
 } from 'lucide-react';
 import { soccerBall } from '@lucide/lab';
 import type { ElementType } from '../types';
@@ -39,10 +40,11 @@ interface DesktopSidebarProps {
   teamConfigContent: React.ReactNode;
   mostrarMarcador: boolean;
   setMostrarMarcador: (show: boolean) => void;
-  slotNames: [string, string, string];
+  slotNames: string[];
   onSaveSlot: (slotIndex: number) => void;
   onLoadSlot: (slotIndex: number) => void;
   onDeleteSlot: (slotIndex: number) => void;
+  onRenameSlot: (slotIndex: number, newName: string) => void;
 }
 
 /* ── Collapsible section wrapper ─────────────────────────────────────── */
@@ -108,6 +110,7 @@ export default function DesktopSidebar({
   onSaveSlot,
   onLoadSlot,
   onDeleteSlot,
+  onRenameSlot,
 }: DesktopSidebarProps) {
   const [extrasOpen, setExtrasOpen] = useState(true);
   const [teamsOpen, setTeamsOpen] = useState(true);
@@ -268,7 +271,7 @@ export default function DesktopSidebar({
           onToggle={() => setTacticsOpen(!tacticsOpen)}
         >
           <div className="space-y-2">
-            {([0, 1, 2] as const).map((slotIdx) => {
+            {([0, 1, 2, 3, 4] as const).map((slotIdx) => {
               const name = slotNames[slotIdx]
               const isEmpty = !name
               return (
@@ -294,13 +297,28 @@ export default function DesktopSidebar({
                     <RotateCcw size={13} />
                   </button>
                   {!isEmpty && (
-                    <button
-                      onClick={() => onDeleteSlot(slotIdx)}
-                      className="shrink-0 w-8 h-8 flex items-center justify-center rounded-xl bg-red-500/10 text-red-400 border border-red-500/15 hover:bg-red-500/20 hover:border-red-500/25 transition-all cursor-pointer active:scale-95"
-                      title={`Borrar Táctica ${slotIdx + 1}`}
-                    >
-                      <Trash2 size={13} />
-                    </button>
+                    <>
+                      <button
+                        onClick={() => {
+                          const currentName = name || `Táctica ${slotIdx + 1}`
+                          const newName = prompt('Nombre de la táctica:', currentName)
+                          if (newName !== null) {
+                            onRenameSlot(slotIdx, newName.trim() || `Táctica ${slotIdx + 1}`)
+                          }
+                        }}
+                        className="shrink-0 w-8 h-8 flex items-center justify-center rounded-xl bg-amber-500/10 text-amber-400 border border-amber-500/15 hover:bg-amber-500/20 hover:border-amber-500/25 transition-all cursor-pointer active:scale-95"
+                        title={`Renombrar Táctica ${slotIdx + 1}`}
+                      >
+                        <Pencil size={13} />
+                      </button>
+                      <button
+                        onClick={() => onDeleteSlot(slotIdx)}
+                        className="shrink-0 w-8 h-8 flex items-center justify-center rounded-xl bg-red-500/10 text-red-400 border border-red-500/15 hover:bg-red-500/20 hover:border-red-500/25 transition-all cursor-pointer active:scale-95"
+                        title={`Borrar Táctica ${slotIdx + 1}`}
+                      >
+                        <Trash2 size={13} />
+                      </button>
+                    </>
                   )}
                 </div>
               )

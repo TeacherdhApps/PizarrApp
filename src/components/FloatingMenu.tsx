@@ -20,6 +20,7 @@ import {
   EyeOff,
   Goal,
   Shield,
+  Pencil,
 } from 'lucide-react';
 import { soccerBall } from '@lucide/lab';
 import type { ElementType } from '../types';
@@ -41,10 +42,11 @@ interface FloatingMenuProps {
   mostrarMarcador: boolean;
   setMostrarMarcador: (show: boolean) => void;
 
-  slotNames: [string, string, string];
+  slotNames: string[];
   onSaveSlot: (slotIndex: number) => void;
   onLoadSlot: (slotIndex: number) => void;
   onDeleteSlot: (slotIndex: number) => void;
+  onRenameSlot: (slotIndex: number, newName: string) => void;
 }
 
 export default function FloatingMenu({
@@ -65,6 +67,7 @@ export default function FloatingMenu({
   onSaveSlot,
   onLoadSlot,
   onDeleteSlot,
+  onRenameSlot,
 }: FloatingMenuProps) {
   const [isMounted, setIsMounted] = useState(false);
   const [isExpanded, setIsExpanded] = useState(false);
@@ -424,7 +427,7 @@ export default function FloatingMenu({
                       <div>
                         <h4 className="text-[9px] font-bold uppercase tracking-wider text-text-muted mb-2 px-1">Tácticas Guardadas</h4>
                         <div className="space-y-1.5">
-                          {([0, 1, 2] as const).map((slotIdx) => {
+                          {([0, 1, 2, 3, 4] as const).map((slotIdx) => {
                             const name = slotNames[slotIdx]
                             const isEmpty = !name
                             return (
@@ -450,13 +453,28 @@ export default function FloatingMenu({
                                   <RotateCcw size={12} />
                                 </button>
                                 {!isEmpty && (
-                                  <button
-                                    onClick={() => { onDeleteSlot(slotIdx); }}
-                                    className="shrink-0 w-7 h-7 flex items-center justify-center rounded-lg bg-red-500/10 text-red-400 border border-red-500/20 hover:bg-red-500/20 transition-colors cursor-pointer active:scale-90"
-                                    title={`Borrar Táctica ${slotIdx + 1}`}
-                                  >
-                                    <Trash2 size={12} />
-                                  </button>
+                                  <>
+                                    <button
+                                      onClick={() => {
+                                        const currentName = name || `Táctica ${slotIdx + 1}`
+                                        const newName = prompt('Nombre de la táctica:', currentName)
+                                        if (newName !== null) {
+                                          onRenameSlot(slotIdx, newName.trim() || `Táctica ${slotIdx + 1}`)
+                                        }
+                                      }}
+                                      className="shrink-0 w-7 h-7 flex items-center justify-center rounded-lg bg-amber-500/10 text-amber-400 border border-amber-500/20 hover:bg-amber-500/20 transition-colors cursor-pointer active:scale-90"
+                                      title={`Renombrar Táctica ${slotIdx + 1}`}
+                                    >
+                                      <Pencil size={12} />
+                                    </button>
+                                    <button
+                                      onClick={() => { onDeleteSlot(slotIdx); }}
+                                      className="shrink-0 w-7 h-7 flex items-center justify-center rounded-lg bg-red-500/10 text-red-400 border border-red-500/20 hover:bg-red-500/20 transition-colors cursor-pointer active:scale-90"
+                                      title={`Borrar Táctica ${slotIdx + 1}`}
+                                    >
+                                      <Trash2 size={12} />
+                                    </button>
+                                  </>
                                 )}
                               </div>
                             )

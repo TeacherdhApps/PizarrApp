@@ -97,11 +97,13 @@ function loadFromLS(): TacticaGuardada | null {
   }
 }
 
-/* ── Tactic Slot helpers (3 local slots) ─────────────────────────────── */
+/* ── Tactic Slot helpers (5 local slots) ─────────────────────────────── */
 const LS_SLOT_KEYS = [
   'pizarra-tactica-slot-1',
   'pizarra-tactica-slot-2',
   'pizarra-tactica-slot-3',
+  'pizarra-tactica-slot-4',
+  'pizarra-tactica-slot-5',
 ] as const
 
 function loadSlot(slotIndex: number): TacticaGuardada | null {
@@ -245,6 +247,27 @@ function App() {
   // Share link state
   const [shareUrl, setShareUrl] = useState('')
   const [isCopied, setIsCopied] = useState(false)
+
+  // Save tracking for dirty state checking
+  const [lastSavedJson, setLastSavedJson] = useState<string>(() => {
+    const saved = loadFromLS()
+    return JSON.stringify({
+      local: initialData.local,
+      visitante: initialData.visitante,
+      colorLocal: initialData.colorLocal,
+      colorVisitante: initialData.colorVisitante,
+      elements: initialData.elements,
+      arrows: initialData.arrows,
+      tacticName: saved?.tacticName ?? 'Pizarra de Tácticas',
+      nombreLocal: initialData.nombreLocal,
+      nombreVisitante: initialData.nombreVisitante,
+      golesLocal: initialData.golesLocal,
+      golesVisitante: initialData.golesVisitante,
+      mostrarMarcador: initialData.mostrarMarcador,
+      marcadorX: initialData.marcadorX,
+      marcadorY: initialData.marcadorY,
+    })
+  })
 
   // Fullscreen state
   const [isFullscreen, setIsFullscreen] = useState(false)
@@ -510,6 +533,7 @@ function App() {
         if (parsed.marcadorX !== undefined) setMarcadorX(parsed.marcadorX)
         if (parsed.marcadorY !== undefined) setMarcadorY(parsed.marcadorY)
         setResetKey((k) => k + 1)
+        setLastSavedJson(json)
         window.history.replaceState(null, '', window.location.pathname)
         showToast('✓ Táctica cargada desde enlace')
       } catch { /* ignore malformed data */ }
@@ -770,15 +794,23 @@ function App() {
 
 
 
-  /* ── Tactic Slots (save/load 3 tactics) ──────────────────────────── */
-  const [slotNames, setSlotNames] = useState<[string, string, string]>(() => [
+  /* ── Tactic Slots (save/load 5 tactics) ──────────────────────────── */
+  const [slotNames, setSlotNames] = useState<string[]>(() => [
     getSlotName(0),
     getSlotName(1),
     getSlotName(2),
+    getSlotName(3),
+    getSlotName(4),
   ])
 
   const refreshSlotNames = useCallback(() => {
-    setSlotNames([getSlotName(0), getSlotName(1), getSlotName(2)])
+    setSlotNames([
+      getSlotName(0),
+      getSlotName(1),
+      getSlotName(2),
+      getSlotName(3),
+      getSlotName(4),
+    ])
   }, [])
 
   const getCurrentTacticData = useCallback((): TacticaGuardada => ({
@@ -789,11 +821,30 @@ function App() {
     nombreLocal, nombreVisitante, golesLocal, golesVisitante, mostrarMarcador,
     marcadorX, marcadorY])
 
+
+  const hasUnsavedChanges = lastSavedJson !== '' && lastSavedJson !== JSON.stringify(getCurrentTacticData())
+
+  // Prevent exiting/closing without saving
+  useEffect(() => {
+    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+      if (hasUnsavedChanges) {
+        e.preventDefault()
+        e.returnValue = ''
+        return ''
+      }
+    }
+    window.addEventListener('beforeunload', handleBeforeUnload)
+    return () => {
+      window.removeEventListener('beforeunload', handleBeforeUnload)
+    }
+  }, [hasUnsavedChanges])
+
   const guardarEnSlot = useCallback((slotIndex: number) => {
     const key = LS_SLOT_KEYS[slotIndex]
     if (!key) return
     const data = getCurrentTacticData()
     localStorage.setItem(key, JSON.stringify(data))
+    setLastSavedJson(JSON.stringify(data))
     refreshSlotNames()
     showToast(`✓ Guardada en Táctica ${slotIndex + 1}`)
   }, [getCurrentTacticData, refreshSlotNames, showToast])
@@ -819,6 +870,7 @@ function App() {
     if (saved.marcadorX !== undefined) setMarcadorX(saved.marcadorX)
     if (saved.marcadorY !== undefined) setMarcadorY(saved.marcadorY)
     setResetKey((k) => k + 1)
+    setLastSavedJson(JSON.stringify(saved))
     showToast(`✓ Táctica ${slotIndex + 1} cargada`)
   }, [showToast])
 
@@ -829,6 +881,36 @@ function App() {
     refreshSlotNames()
     showToast(`🗑 Táctica ${slotIndex + 1} borrada`)
   }, [refreshSlotNames, showToast])
+
+  const renombrarSlot = useCallback((slotIndex: number, newName: string) => {
+    const key = LS_SLOT_KEYS[slotIndex]
+    if (!key) return
+    const raw = localStorage.getItem(key)
+    let data: TacticaGuardada
+    if (raw) {
+      try {
+        data = JSON.parse(raw) as TacticaGuardada
+        data.tacticName = newName
+      } catch {
+        data = getCurrentTacticData()
+        data.tacticName = newName
+      }
+    } else {
+      data = getCurrentTacticData()
+      data.tacticName = newName
+    }
+    localStorage.setItem(key, JSON.stringify(data))
+    
+    // If this slot corresponds to the currently loaded/saved data, sync lastSavedJson too
+    const currentData = getCurrentTacticData()
+    // Compare key data or just sync it if it's the active one
+    if (JSON.stringify(currentData) === raw) {
+      setLastSavedJson(JSON.stringify(data))
+    }
+    
+    refreshSlotNames()
+    showToast(`✓ Nombre de Táctica ${slotIndex + 1} actualizado`)
+  }, [getCurrentTacticData, refreshSlotNames, showToast])
 
 
 
@@ -1963,6 +2045,7 @@ function App() {
           onSaveSlot={guardarEnSlot}
           onLoadSlot={cargarDesdeSlot}
           onDeleteSlot={borrarSlot}
+          onRenameSlot={renombrarSlot}
         />
         {activeColorPicker && (
           <ColorPickerPortal
@@ -2141,6 +2224,7 @@ function App() {
         onSaveSlot={guardarEnSlot}
         onLoadSlot={cargarDesdeSlot}
         onDeleteSlot={borrarSlot}
+        onRenameSlot={renombrarSlot}
       />
 
       {activeColorPicker && (
