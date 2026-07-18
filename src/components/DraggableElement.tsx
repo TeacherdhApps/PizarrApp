@@ -1,7 +1,7 @@
-import { useRef, useState, useEffect, useCallback } from 'react';
+import { useRef, useState, useEffect, useCallback, memo } from 'react';
 import { usePercentDrag } from '../hooks/usePercentDrag';
 import type { FieldElement } from '../types';
-import { RotateCw } from 'lucide-react';
+import { RotateCw, Square, Circle } from 'lucide-react';
 
 interface DraggableElementProps {
   element: FieldElement;
@@ -11,6 +11,9 @@ interface DraggableElementProps {
   onTextChange?: (id: string, text: string) => void;
   onScaleChange?: (id: string, scale: number) => void;
   onRotationChange?: (id: string, rotation: number) => void;
+  onShapeChange?: (id: string, shape: 'circle' | 'rect') => void;
+  /** Optional grid step in % — when set, drag positions snap to the grid */
+  snapStep?: number;
 }
 
 /* ── Visual renderers per type ────────────────────────────────────────── */
@@ -139,9 +142,24 @@ function DummyVisual() {
   );
 }
 
+function ZoneVisual({ shape }: { shape: 'circle' | 'rect' }) {
+  return (
+    <div
+      className={`border-2 border-dashed border-amber-300/80 bg-amber-300/15 ${
+        shape === 'circle' ? 'rounded-full' : 'rounded-md'
+      }`}
+      style={{
+        width: 'clamp(64px, 9vw, 110px)',
+        height: 'clamp(64px, 9vw, 110px)',
+        boxShadow: 'inset 0 0 20px rgba(252,211,77,0.15)',
+      }}
+    />
+  );
+}
+
 /* ── Main component ───────────────────────────────────────────────────── */
 
-export default function DraggableElement({
+function DraggableElement({
   element,
   constraintsRef,
   onDragEnd,
@@ -149,7 +167,10 @@ export default function DraggableElement({
   onTextChange,
   onScaleChange,
   onRotationChange,
+  onShapeChange,
+  snapStep,
 }: DraggableElementProps) {
+  const isZone = element.type === 'zone';
   const [hovered, setHovered] = useState(false);
   const [editing, setEditing] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
@@ -160,6 +181,7 @@ export default function DraggableElement({
 
   const { onPointerDown } = usePercentDrag({
     containerRef: constraintsRef,
+    snapStep,
     onMove: (nx, ny) => {
       if (isPinching.current) return; // suppress position updates while pinching
       setIsDragging(true);
@@ -189,7 +211,7 @@ export default function DraggableElement({
       moveEvent.stopPropagation();
       const currentAngleRad = Math.atan2(moveEvent.clientY - cy, moveEvent.clientX - cx);
       const diffRad = currentAngleRad - initialAngleRad;
-      let diffDeg = diffRad * (180 / Math.PI);
+      const diffDeg = diffRad * (180 / Math.PI);
       
       let newRotation = (initialRotation + diffDeg) % 360;
       if (newRotation < 0) newRotation += 360;
@@ -302,7 +324,8 @@ export default function DraggableElement({
         left: `${element.x}%`,
         top: `${element.y}%`,
         transform: `translate(-50%, -50%) scale(${scale}) rotate(${element.rotation ?? 0}deg)`,
-        zIndex: isDragging ? 50 : hovered ? 40 : 10,
+        // Zones sit behind players and arrows at rest; only lift while dragging
+        zIndex: isDragging ? (isZone ? 45 : 50) : isZone ? 1 : hovered ? 40 : 10,
         cursor: editing ? 'auto' : isDragging ? 'grabbing' : 'grab',
         transition: isDragging ? 'none' : 'transform 0.15s ease',
       }}
@@ -339,11 +362,30 @@ export default function DraggableElement({
         </button>
       )}
 
+      {/* Shape toggle — zones only (circle ↔ rectangle) */}
+      {isZone && hovered && (
+        <button
+          onPointerDown={(e) => e.stopPropagation()}
+          onClick={(e) => {
+            e.stopPropagation();
+            onShapeChange?.(element.id, element.shape === 'rect' ? 'circle' : 'rect');
+          }}
+          className="absolute -bottom-2 -right-2 z-50 w-5 h-5 rounded-full
+                     bg-amber-500 hover:bg-amber-400 text-black
+                     flex items-center justify-center shadow-md cursor-pointer transition-colors"
+          style={{ transform: `scale(${1 / scale})` }}
+          title={element.shape === 'rect' ? 'Cambiar a círculo' : 'Cambiar a rectángulo'}
+        >
+          {element.shape === 'rect' ? <Circle size={10} strokeWidth={2.5} /> : <Square size={10} strokeWidth={2.5} />}
+        </button>
+      )}
+
       {/* Visual */}
       {element.type === 'ball' && <BallVisual />}
       {element.type === 'cone' && <ConeVisual />}
       {element.type === 'goal' && <GoalVisual />}
       {element.type === 'dummy' && <DummyVisual />}
+      {element.type === 'zone' && <ZoneVisual shape={element.shape ?? 'circle'} />}
       {element.type === 'text' && (
         <TextVisual
           text={element.text ?? 'Texto'}
@@ -357,3 +399,5 @@ export default function DraggableElement({
     </div>
   );
 }
+
+export default memo(DraggableElement);

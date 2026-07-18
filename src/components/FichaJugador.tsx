@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect, memo } from 'react';
 import { createPortal } from 'react-dom';
 import { usePercentDrag } from '../hooks/usePercentDrag';
 
@@ -15,16 +15,20 @@ export interface FichaJugadorProps {
   y: number;
   /** Ref to the drag-constraint container (the Cancha wrapper) */
   constraintsRef: React.RefObject<HTMLDivElement | null>;
-  /** Called when the user finishes dragging, with updated % coordinates */
-  onDragEnd?: (x: number, y: number) => void;
+  /** Called while/after dragging, with the player number and % coordinates */
+  onDragEnd?: (numero: number, x: number, y: number) => void;
   /** Called when the delete button is clicked */
   onDelete?: (numero: number) => void;
   /** Called when the player name is edited */
-  onNameChange?: (newName: string) => void;
+  onNameChange?: (numero: number, newName: string) => void;
   /** Called when the player number is edited */
-  onNumberChange?: (newNumber: number) => void;
+  onNumberChange?: (oldNumero: number, newNumber: number) => void;
+  /** Called to bench this player (drop over a bench zone, or the modal button) */
+  onSendToBench?: (numero: number) => void;
   /** Whether we are in mobile layout (vertical pitch) */
   isMobile?: boolean;
+  /** Optional grid step in % — when set, drag positions snap to the grid */
+  snapStep?: number;
 }
 
 /**
@@ -36,7 +40,7 @@ export interface FichaJugadorProps {
  * Clicking a player opens a responsive dialog (bottom sheet on mobile, centered modal on desktop)
  * to easily edit their details or delete them.
  */
-export default function FichaJugador({
+function FichaJugador({
   numero,
   nombre,
   color,
@@ -47,7 +51,9 @@ export default function FichaJugador({
   onDelete,
   onNameChange,
   onNumberChange,
+  onSendToBench,
   isMobile = false,
+  snapStep,
 }: FichaJugadorProps) {
   const [isDragging, setIsDragging] = useState(false);
   const [hovered, setHovered] = useState(false);
@@ -69,11 +75,11 @@ export default function FichaJugador({
   const handleApplyChanges = () => {
     const trimmed = tempNombre.trim();
     if (trimmed && trimmed !== nombre) {
-      onNameChange?.(trimmed);
+      onNameChange?.(numero, trimmed);
     }
     const parsed = parseInt(tempNumero, 10);
     if (!isNaN(parsed) && parsed !== numero && parsed >= 0) {
-      onNumberChange?.(parsed);
+      onNumberChange?.(numero, parsed);
     }
     setShowModal(false);
   };
@@ -85,26 +91,48 @@ export default function FichaJugador({
 
   const { onPointerDown } = usePercentDrag({
     containerRef: constraintsRef,
+    snapStep,
     onDragStart: () => {
       hasDraggedRef.current = true;
       setIsDragging(true);
     },
     onMove: (nx, ny) => {
-      onDragEnd?.(nx, ny);
+      onDragEnd?.(numero, nx, ny);
     },
-    onEnd: (nx, ny) => {
+    onEnd: (nx, ny, client) => {
       setIsDragging(false);
-      onDragEnd?.(nx, ny);
+      // Dropping over a bench zone benches the player instead of repositioning.
+      if (client && onSendToBench) {
+        const target = document.elementFromPoint(client.clientX, client.clientY) as HTMLElement | null;
+        if (target?.closest('[data-bench-dropzone]')) {
+          onSendToBench(numero);
+          return;
+        }
+      }
+      onDragEnd?.(numero, nx, ny);
     },
   });
+
+  // Escape closes the edit dialog without applying changes
+  useEffect(() => {
+    if (!showModal) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setShowModal(false);
+    };
+    document.addEventListener('keydown', onKey);
+    return () => document.removeEventListener('keydown', onKey);
+  }, [showModal]);
 
   const renderModal = () => {
     if (!showModal) return null;
 
     return createPortal(
-      <div 
+      <div
         className="fixed inset-0 z-[200] flex items-end justify-center md:items-center"
         onPointerDown={(e) => e.stopPropagation()}
+        role="dialog"
+        aria-modal="true"
+        aria-label={`Editar jugador ${numero}`}
       >
         {/* Backdrop overlay */}
         <div 
@@ -175,7 +203,19 @@ export default function FichaJugador({
             >
               Guardar Cambios
             </button>
-            
+
+            {onSendToBench && (
+              <button
+                onClick={() => {
+                  setShowModal(false);
+                  onSendToBench(numero);
+                }}
+                className="w-full py-3 rounded-xl bg-surface-700 hover:bg-surface-600 text-text-secondary hover:text-text-primary text-xs font-bold transition-all duration-200 active:scale-98 cursor-pointer"
+              >
+                Enviar al banquillo
+              </button>
+            )}
+
             <div className="grid grid-cols-2 gap-2">
               <button
                 onClick={handleDelete}
@@ -214,6 +254,8 @@ export default function FichaJugador({
         }}
         onMouseEnter={() => setHovered(true)}
         onMouseLeave={() => setHovered(false)}
+        role="button"
+        aria-label={`Jugador ${numero} · ${nombre}`}
         className="absolute flex flex-col items-center gap-0.5 select-none touch-none"
         style={{
           left: `${x}%`,
@@ -304,3 +346,5 @@ export default function FichaJugador({
     </>
   );
 }
+
+export default memo(FichaJugador);

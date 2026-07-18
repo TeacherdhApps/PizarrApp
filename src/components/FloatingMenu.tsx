@@ -1,15 +1,12 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { 
-  Sparkles, 
-  Users, 
-  Save, 
-  RotateCcw, 
-  Link2, 
-  GripVertical, 
-  Triangle, 
-  Minus, 
-  Type, 
-  Trash2, 
+import {
+  Users,
+  Link2,
+  GripVertical,
+  Triangle,
+  Minus,
+  Type,
+  Trash2,
   Icon,
   Settings,
   Image,
@@ -20,9 +17,15 @@ import {
   EyeOff,
   Goal,
   Shield,
+  Shapes,
+  Circle,
+  Film,
+  FileJson,
+  Upload,
 } from 'lucide-react';
 import { soccerBall } from '@lucide/lab';
 import type { ElementType } from '../types';
+import TacticSlots from './TacticSlots';
 
 interface FloatingMenuProps {
   onAddTool: (type: ElementType | 'arrow') => void;
@@ -37,14 +40,17 @@ interface FloatingMenuProps {
   isTeamConfigOpen: boolean;
   setIsTeamConfigOpen: (open: boolean) => void;
   teamConfigContent: React.ReactNode;
+  animationContent: React.ReactNode;
 
   mostrarMarcador: boolean;
   setMostrarMarcador: (show: boolean) => void;
 
-  slotNames: [string, string, string];
+  slotNames: string[];
   onSaveSlot: (slotIndex: number) => void;
   onLoadSlot: (slotIndex: number) => void;
   onDeleteSlot: (slotIndex: number) => void;
+  onExportTactic: () => void;
+  onImportTactic: () => void;
 }
 
 export default function FloatingMenu({
@@ -59,31 +65,27 @@ export default function FloatingMenu({
   isTeamConfigOpen,
   setIsTeamConfigOpen,
   teamConfigContent,
+  animationContent,
   mostrarMarcador,
   setMostrarMarcador,
   slotNames,
   onSaveSlot,
   onLoadSlot,
   onDeleteSlot,
+  onExportTactic,
+  onImportTactic,
 }: FloatingMenuProps) {
-  const [isMounted, setIsMounted] = useState(false);
   const [isExpanded, setIsExpanded] = useState(false);
   const [isExtrasOpen, setIsExtrasOpen] = useState(false);
+  const [isAnimationOpen, setIsAnimationOpen] = useState(false);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
-  const [position, setPosition] = useState({ x: 0, y: 0 });
+  // Initial position: bottom left of the window (client-only app, window always exists)
+  const [position, setPosition] = useState(() => ({ x: 16, y: window.innerHeight - 150 }));
 
   const containerRef = useRef<HTMLDivElement>(null);
   const isDraggingRef = useRef(false);
   const dragStartRef = useRef({ x: 0, y: 0 });
   const clickStartRef = useRef({ x: 0, y: 0 });
-
-  useEffect(() => {
-    // Initial position on mount (bottom left of the window)
-    const initialX = 16;
-    const initialY = window.innerHeight - 150;
-    setPosition({ x: initialX, y: initialY });
-    setIsMounted(true);
-  }, []);
 
   useEffect(() => {
     const handleResize = () => {
@@ -100,10 +102,23 @@ export default function FloatingMenu({
     return () => window.removeEventListener('resize', handleResize);
   }, []);
 
-  if (!isMounted) return null;
+  // Escape closes any open panel
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        setIsExtrasOpen(false);
+        setIsAnimationOpen(false);
+        setIsSettingsOpen(false);
+        setIsTeamConfigOpen(false);
+      }
+    };
+    document.addEventListener('keydown', onKey);
+    return () => document.removeEventListener('keydown', onKey);
+  }, [setIsTeamConfigOpen]);
 
   const closeAll = () => {
     setIsExtrasOpen(false);
+    setIsAnimationOpen(false);
     setIsSettingsOpen(false);
     setIsTeamConfigOpen(false);
   };
@@ -114,10 +129,10 @@ export default function FloatingMenu({
     const target = e.target as HTMLElement;
     // Don't drag if clicking buttons, inputs, labels, etc.
     if (
-      target.closest('button') || 
-      target.closest('input') || 
-      target.closest('select') || 
-      target.closest('label') || 
+      target.closest('button') ||
+      target.closest('input') ||
+      target.closest('select') ||
+      target.closest('label') ||
       target.closest('a')
     ) {
       return;
@@ -142,7 +157,7 @@ export default function FloatingMenu({
     // Clamp coordinates to screen dimensions
     const width = containerRef.current?.offsetWidth || 56;
     const height = containerRef.current?.offsetHeight || 56;
-    
+
     const maxX = window.innerWidth - width - 16;
     const maxY = window.innerHeight - height - 16;
 
@@ -159,7 +174,7 @@ export default function FloatingMenu({
     if (containerRef.current && typeof containerRef.current.releasePointerCapture === 'function') {
       try {
         containerRef.current.releasePointerCapture(e.pointerId);
-      } catch (err) {
+      } catch {
         // Ignored
       }
     }
@@ -177,18 +192,26 @@ export default function FloatingMenu({
     }
   };
 
-  const handleTogglePanel = (panel: 'extras' | 'teams' | 'settings') => {
+  const handleTogglePanel = (panel: 'extras' | 'teams' | 'animation' | 'settings') => {
     if (panel === 'extras') {
       setIsExtrasOpen(!isExtrasOpen);
+      setIsAnimationOpen(false);
       setIsSettingsOpen(false);
       setIsTeamConfigOpen(false);
     } else if (panel === 'teams') {
       setIsTeamConfigOpen(!isTeamConfigOpen);
       setIsExtrasOpen(false);
+      setIsAnimationOpen(false);
       setIsSettingsOpen(false);
+    } else if (panel === 'animation') {
+      setIsAnimationOpen(!isAnimationOpen);
+      setIsExtrasOpen(false);
+      setIsSettingsOpen(false);
+      setIsTeamConfigOpen(false);
     } else if (panel === 'settings') {
       setIsSettingsOpen(!isSettingsOpen);
       setIsExtrasOpen(false);
+      setIsAnimationOpen(false);
       setIsTeamConfigOpen(false);
     }
   };
@@ -208,60 +231,66 @@ export default function FloatingMenu({
 
   const popoverPositionClass = `${
     isTopHalf ? 'top-[calc(100%+12px)]' : 'bottom-[calc(100%+12px)]'
-  } ${
-    isLeftHalf ? 'left-0' : 'right-0'
-  }`;
+  } ${isLeftHalf ? 'left-0' : 'right-0'}`;
 
   const extrasItems = [
     {
       type: 'ball' as const,
       label: 'Balón',
       desc: 'Añadir balón al campo',
-      icon: <Icon iconNode={soccerBall} size={18} strokeWidth={2} className="text-emerald-400" />,
+      icon: <Icon iconNode={soccerBall} size={18} strokeWidth={2} />,
     },
     {
       type: 'cone' as const,
       label: 'Cono',
       desc: 'Cono de entrenamiento',
-      icon: <Triangle size={18} strokeWidth={2} className="text-orange-400 fill-orange-400/20" />,
+      icon: <Triangle size={18} strokeWidth={2} />,
     },
     {
       type: 'arrow' as const,
       label: 'Línea',
       desc: 'Flecha táctica interactiva',
-      icon: <Minus size={18} strokeWidth={2.5} className="text-yellow-400" />,
+      icon: <Minus size={18} strokeWidth={2.5} />,
     },
     {
       type: 'text' as const,
       label: 'Texto',
       desc: 'Etiqueta de texto libre',
-      icon: <Type size={18} strokeWidth={2} className="text-cyan-400" />,
+      icon: <Type size={18} strokeWidth={2} />,
     },
     {
       type: 'goal' as const,
       label: 'Portería',
       desc: 'Portería pop-up de práctica',
-      icon: <Goal size={18} strokeWidth={2} className="text-rose-400" />,
+      icon: <Goal size={18} strokeWidth={2} />,
     },
     {
       type: 'dummy' as const,
       label: 'Barrera',
       desc: 'Barrera de entrenamiento',
-      icon: <Shield size={18} strokeWidth={2} className="text-lime-400" />,
+      icon: <Shield size={18} strokeWidth={2} />,
+    },
+    {
+      type: 'zone' as const,
+      label: 'Zona',
+      desc: 'Área resaltada (presión / fuera de juego)',
+      icon: <Circle size={18} strokeWidth={2} />,
     },
   ];
 
-  const anyPanelOpen = isExtrasOpen || isTeamConfigOpen || isSettingsOpen;
+  const anyPanelOpen = isExtrasOpen || isTeamConfigOpen || isAnimationOpen || isSettingsOpen;
+
+  const panelBtnClass = (active: boolean) =>
+    `flex items-center justify-center w-9 h-9 rounded-xl border transition-all cursor-pointer active:scale-90 ${
+      active
+        ? 'bg-accent-500/20 text-accent-400 border-accent-500/30'
+        : 'bg-surface-700/60 text-text-secondary border-border hover:bg-surface-700 hover:text-text-primary'
+    }`;
 
   return (
     <>
       {/* Global backdrop click catcher when any panel is open */}
-      {anyPanelOpen && (
-        <div 
-          className="fixed inset-0 z-[80]" 
-          onClick={closeAll} 
-        />
-      )}
+      {anyPanelOpen && <div className="fixed inset-0 z-[80]" onClick={closeAll} />}
 
       <div
         ref={containerRef}
@@ -269,15 +298,16 @@ export default function FloatingMenu({
         onPointerMove={handlePointerMove}
         onPointerUp={handlePointerUp}
         role="button"
-        title={isExpanded ? "Colapsar menú" : "Expandir menú"}
+        title={isExpanded ? 'Colapsar menú' : 'Expandir menú'}
+        aria-label={isExpanded ? 'Colapsar menú' : 'Expandir menú de herramientas'}
         style={{
           left: position.x,
           top: position.y,
           touchAction: 'none',
         }}
         className={`fixed z-[95] transition-shadow duration-200 select-none ${
-          isExpanded 
-            ? 'p-2 rounded-2xl bg-surface-800/90 border border-border backdrop-blur-md shadow-2xl flex items-center gap-2 animate-in fade-in zoom-in-95 duration-150' 
+          isExpanded
+            ? 'p-2 rounded-2xl bg-surface-800/90 border border-border backdrop-blur-md shadow-2xl flex items-center gap-2 animate-in fade-in zoom-in-95 duration-150'
             : 'w-14 h-14 bg-transparent flex items-center justify-center cursor-grab active:cursor-grabbing hover:scale-105 active:scale-95 transition-all duration-150'
         }`}
       >
@@ -294,9 +324,13 @@ export default function FloatingMenu({
 
             {/* Quick Collapse Button */}
             <button
-              onClick={() => { setIsExpanded(false); closeAll(); }}
+              onClick={() => {
+                setIsExpanded(false);
+                closeAll();
+              }}
               className="flex items-center justify-center w-8 h-8 rounded-xl bg-surface-700/60 text-text-secondary hover:text-text-primary border border-border cursor-pointer transition-colors"
               title="Colapsar menú"
+              aria-label="Colapsar menú"
             >
               <Icon iconNode={soccerBall} size={18} strokeWidth={2} className="text-accent-400" />
             </button>
@@ -312,12 +346,10 @@ export default function FloatingMenu({
                   setMostrarMarcador(!mostrarMarcador);
                   closeAll();
                 }}
-                className={`flex items-center justify-center w-9 h-9 rounded-xl border transition-all cursor-pointer active:scale-90 ${
-                  mostrarMarcador
-                    ? 'bg-accent-500/20 text-accent-400 border-accent-500/30'
-                    : 'bg-surface-700/60 text-text-secondary border-border hover:bg-surface-700 hover:text-text-primary'
-                }`}
-                title={mostrarMarcador ? "Ocultar Marcador" : "Mostrar Marcador"}
+                className={panelBtnClass(mostrarMarcador)}
+                title={mostrarMarcador ? 'Ocultar Marcador' : 'Mostrar Marcador'}
+                aria-label={mostrarMarcador ? 'Ocultar marcador' : 'Mostrar marcador'}
+                aria-pressed={mostrarMarcador}
               >
                 {mostrarMarcador ? <EyeOff size={16} /> : <Eye size={16} />}
               </button>
@@ -326,18 +358,18 @@ export default function FloatingMenu({
               <div className="relative">
                 <button
                   onClick={() => handleTogglePanel('extras')}
-                  className={`flex items-center justify-center w-9 h-9 rounded-xl border transition-all cursor-pointer active:scale-90 ${
-                    isExtrasOpen
-                      ? 'bg-accent-500/20 text-accent-400 border-accent-500/30 font-semibold'
-                      : 'bg-surface-700/60 text-text-secondary border-border hover:bg-surface-700 hover:text-text-primary'
-                  }`}
-                  title="Extras"
+                  className={panelBtnClass(isExtrasOpen)}
+                  title="Elementos"
+                  aria-label="Elementos adicionales"
+                  aria-expanded={isExtrasOpen}
                 >
-                  <Sparkles size={16} className={isExtrasOpen ? 'text-accent-400' : 'text-text-secondary'} />
+                  <Shapes size={16} />
                 </button>
-                
+
                 {isExtrasOpen && (
-                  <div className={`z-[100] border border-border bg-surface-700 p-2 shadow-2xl rounded-xl animate-in fade-in duration-150 md:absolute md:w-56 ${popoverPositionClass} popover-mobile`}>
+                  <div
+                    className={`z-[100] border border-border bg-surface-700 p-2 shadow-2xl rounded-xl animate-in fade-in duration-150 md:absolute md:w-56 ${popoverPositionClass} popover-mobile`}
+                  >
                     <h3 className="text-[10px] font-bold uppercase tracking-wider text-text-secondary px-2.5 py-1.5 border-b border-white/5 mb-1.5">
                       Elementos adicionales
                     </h3>
@@ -348,7 +380,7 @@ export default function FloatingMenu({
                           onClick={() => handleSelectExtra(item.type)}
                           className="w-full flex items-center gap-3 px-2.5 py-2 rounded-lg text-left hover:bg-surface-600 transition-colors cursor-pointer group"
                         >
-                          <div className="w-8 h-8 rounded-lg bg-surface-800 flex items-center justify-center border border-border group-hover:border-white/10 shrink-0">
+                          <div className="w-8 h-8 rounded-lg bg-surface-800 flex items-center justify-center border border-border group-hover:border-white/10 shrink-0 text-text-secondary group-hover:text-accent-400 transition-colors">
                             {item.icon}
                           </div>
                           <div className="flex flex-col min-w-0">
@@ -383,17 +415,17 @@ export default function FloatingMenu({
               <div className="relative">
                 <button
                   onClick={() => handleTogglePanel('teams')}
-                  className={`flex items-center justify-center w-9 h-9 rounded-xl border transition-all cursor-pointer active:scale-90 ${
-                    isTeamConfigOpen
-                      ? 'bg-accent-500/20 text-accent-400 border-accent-500/30'
-                      : 'bg-surface-700/60 text-text-secondary border-border hover:bg-surface-700 hover:text-text-primary'
-                  }`}
+                  className={panelBtnClass(isTeamConfigOpen)}
                   title="Alineaciones"
+                  aria-label="Alineaciones y equipos"
+                  aria-expanded={isTeamConfigOpen}
                 >
                   <Users size={16} />
                 </button>
                 {isTeamConfigOpen && (
-                  <div className={`z-[100] rounded-xl border border-border bg-surface-700 p-4 shadow-2xl animate-in fade-in duration-150 md:absolute md:w-[320px] ${popoverPositionClass} popover-mobile`}>
+                  <div
+                    className={`z-[100] rounded-xl border border-border bg-surface-700 p-4 shadow-2xl animate-in fade-in duration-150 md:absolute md:w-[320px] ${popoverPositionClass} popover-mobile`}
+                  >
                     <h3 className="text-[10px] font-bold uppercase tracking-wider text-text-secondary mb-3 flex items-center gap-1.5">
                       <Users size={12} /> Alineaciones y Equipos
                     </h3>
@@ -402,66 +434,60 @@ export default function FloatingMenu({
                 )}
               </div>
 
-              {/* Settings & Board actions (Guardar, Reiniciar, Exportar, Compartir) */}
+              {/* Animación (key frames + playback) */}
+              <div className="relative">
+                <button
+                  onClick={() => handleTogglePanel('animation')}
+                  className={panelBtnClass(isAnimationOpen)}
+                  title="Animación de jugadas"
+                  aria-label="Animación de jugadas"
+                  aria-expanded={isAnimationOpen}
+                >
+                  <Film size={16} />
+                </button>
+                {isAnimationOpen && (
+                  <div
+                    className={`z-[100] rounded-xl border border-border bg-surface-700 p-4 shadow-2xl animate-in fade-in duration-150 md:absolute md:w-[300px] ${popoverPositionClass} popover-mobile`}
+                  >
+                    <h3 className="text-[10px] font-bold uppercase tracking-wider text-text-secondary mb-3 flex items-center gap-1.5">
+                      <Film size={12} /> Animación de Jugadas
+                    </h3>
+                    {animationContent}
+                  </div>
+                )}
+              </div>
+
+              {/* Settings & Board actions (Guardar, Exportar, Compartir) */}
               <div className="relative">
                 <button
                   onClick={() => handleTogglePanel('settings')}
-                  className={`flex items-center justify-center w-9 h-9 rounded-xl border transition-all cursor-pointer active:scale-90 ${
-                    isSettingsOpen
-                      ? 'bg-accent-500/20 text-accent-400 border-accent-500/30 font-semibold'
-                      : 'bg-surface-700/60 text-text-secondary border-border hover:bg-surface-700 hover:text-text-primary'
-                  }`}
+                  className={panelBtnClass(isSettingsOpen)}
                   title="Configuración y Archivo"
+                  aria-label="Configuración y archivo"
+                  aria-expanded={isSettingsOpen}
                 >
                   <Settings size={16} />
                 </button>
                 {isSettingsOpen && (
-                  <div className={`z-[100] rounded-xl border border-border bg-surface-700 p-4 shadow-2xl animate-in fade-in duration-150 md:absolute md:w-[300px] ${popoverPositionClass} popover-mobile`}>
+                  <div
+                    className={`z-[100] rounded-xl border border-border bg-surface-700 p-4 shadow-2xl animate-in fade-in duration-150 md:absolute md:w-[300px] ${popoverPositionClass} popover-mobile`}
+                  >
                     <div className="space-y-4">
-
-
                       {/* Tactic Slots */}
                       <div>
-                        <h4 className="text-[9px] font-bold uppercase tracking-wider text-text-muted mb-2 px-1">Tácticas Guardadas</h4>
-                        <div className="space-y-1.5">
-                          {([0, 1, 2] as const).map((slotIdx) => {
-                            const name = slotNames[slotIdx]
-                            const isEmpty = !name
-                            return (
-                              <div key={`slot-${slotIdx}`} className="flex items-center gap-1.5">
-                                <div className="flex-1 min-w-0 px-2.5 py-1.5 rounded-lg bg-surface-800 border border-border">
-                                  <span className={`text-[10px] font-semibold leading-tight block truncate ${isEmpty ? 'text-text-muted italic' : 'text-text-primary'}`}>
-                                    {isEmpty ? `Táctica ${slotIdx + 1} · vacía` : name}
-                                  </span>
-                                </div>
-                                <button
-                                  onClick={() => { onSaveSlot(slotIdx); }}
-                                  className="shrink-0 w-7 h-7 flex items-center justify-center rounded-lg bg-accent-500/10 text-accent-400 border border-accent-500/20 hover:bg-accent-500/20 transition-colors cursor-pointer active:scale-90"
-                                  title={`Guardar en Táctica ${slotIdx + 1}`}
-                                >
-                                  <Save size={12} />
-                                </button>
-                                <button
-                                  onClick={() => { closeAll(); onLoadSlot(slotIdx); }}
-                                  disabled={isEmpty}
-                                  className="shrink-0 w-7 h-7 flex items-center justify-center rounded-lg bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 hover:bg-emerald-500/20 transition-colors cursor-pointer active:scale-90 disabled:opacity-30 disabled:cursor-not-allowed"
-                                  title={`Cargar Táctica ${slotIdx + 1}`}
-                                >
-                                  <RotateCcw size={12} />
-                                </button>
-                                {!isEmpty && (
-                                  <button
-                                    onClick={() => { onDeleteSlot(slotIdx); }}
-                                    className="shrink-0 w-7 h-7 flex items-center justify-center rounded-lg bg-red-500/10 text-red-400 border border-red-500/20 hover:bg-red-500/20 transition-colors cursor-pointer active:scale-90"
-                                    title={`Borrar Táctica ${slotIdx + 1}`}
-                                  >
-                                    <Trash2 size={12} />
-                                  </button>
-                                )}
-                              </div>
-                            )
-                          })}
-                        </div>
+                        <h4 className="text-[9px] font-bold uppercase tracking-wider text-text-muted mb-2 px-1">
+                          Tácticas Guardadas
+                        </h4>
+                        <TacticSlots
+                          compact
+                          slotNames={slotNames}
+                          onSaveSlot={onSaveSlot}
+                          onLoadSlot={(idx) => {
+                            closeAll();
+                            onLoadSlot(idx);
+                          }}
+                          onDeleteSlot={onDeleteSlot}
+                        />
                       </div>
 
                       <div className="h-px bg-white/5" />
@@ -470,21 +496,51 @@ export default function FloatingMenu({
                       <div>
                         <h4 className="text-[9px] font-bold uppercase tracking-wider text-text-muted mb-2 px-1">Exportar</h4>
                         <div className="grid grid-cols-2 gap-2">
-                          <button 
-                            onClick={() => { closeAll(); onExportPng(); }} 
+                          <button
+                            onClick={() => {
+                              closeAll();
+                              onExportPng();
+                            }}
                             className="flex items-center justify-center gap-2 py-2 px-2.5 rounded-lg bg-surface-800 hover:bg-surface-600 border border-border hover:border-white/10 transition-colors group cursor-pointer"
                             title="Exportar como imagen PNG"
                           >
-                            <Image size={14} className="text-emerald-400" />
+                            <Image size={14} className="text-text-secondary group-hover:text-accent-400 transition-colors" />
                             <span className="text-xs font-semibold text-text-primary">Imagen PNG</span>
                           </button>
-                          <button 
-                            onClick={() => { closeAll(); onExportPdf(); }} 
+                          <button
+                            onClick={() => {
+                              closeAll();
+                              onExportPdf();
+                            }}
                             className="flex items-center justify-center gap-2 py-2 px-2.5 rounded-lg bg-surface-800 hover:bg-surface-600 border border-border hover:border-white/10 transition-colors group cursor-pointer"
                             title="Descargar en PDF A4"
                           >
-                            <FileText size={14} className="text-rose-400" />
+                            <FileText size={14} className="text-text-secondary group-hover:text-accent-400 transition-colors" />
                             <span className="text-xs font-semibold text-text-primary">PDF A4</span>
+                          </button>
+                        </div>
+                        <div className="grid grid-cols-2 gap-2 mt-2">
+                          <button
+                            onClick={() => {
+                              closeAll();
+                              onExportTactic();
+                            }}
+                            className="flex items-center justify-center gap-2 py-2 px-2.5 rounded-lg bg-surface-800 hover:bg-surface-600 border border-border hover:border-white/10 transition-colors group cursor-pointer"
+                            title="Exportar la táctica como archivo .json"
+                          >
+                            <FileJson size={14} className="text-text-secondary group-hover:text-accent-400 transition-colors" />
+                            <span className="text-xs font-semibold text-text-primary">Exportar</span>
+                          </button>
+                          <button
+                            onClick={() => {
+                              closeAll();
+                              onImportTactic();
+                            }}
+                            className="flex items-center justify-center gap-2 py-2 px-2.5 rounded-lg bg-surface-800 hover:bg-surface-600 border border-border hover:border-white/10 transition-colors group cursor-pointer"
+                            title="Importar una táctica desde un archivo .json"
+                          >
+                            <Upload size={14} className="text-text-secondary group-hover:text-accent-400 transition-colors" />
+                            <span className="text-xs font-semibold text-text-primary">Importar</span>
                           </button>
                         </div>
                       </div>
@@ -500,29 +556,33 @@ export default function FloatingMenu({
                               Copia este enlace de abajo para compartir tu táctica:
                             </p>
                             <div className="flex items-center gap-1.5">
-                              <input 
-                                readOnly 
-                                value={shareUrl} 
+                              <input
+                                readOnly
+                                value={shareUrl}
                                 onClick={(e) => (e.target as HTMLInputElement).select()}
-                                className="flex-1 min-w-0 px-2.5 py-1.5 rounded-lg bg-surface-900/80 text-[10px] text-text-secondary border border-border font-mono truncate outline-none focus:ring-1 focus:ring-emerald-500/30" 
+                                className="flex-1 min-w-0 px-2.5 py-1.5 rounded-lg bg-surface-900/80 text-[10px] text-text-secondary border border-border font-mono truncate outline-none focus:ring-1 focus:ring-accent-500/30"
+                                aria-label="Enlace para compartir"
                               />
-                              <button 
+                              <button
                                 onClick={copyShareLink}
                                 className={`flex items-center justify-center w-8 h-8 rounded-lg border transition-all duration-150 cursor-pointer active:scale-90 shrink-0 ${
-                                  isCopied ? 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30' : 'bg-surface-600 text-text-secondary hover:text-text-primary border-border hover:bg-surface-500'
-                                }`} 
+                                  isCopied
+                                    ? 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30'
+                                    : 'bg-surface-600 text-text-secondary hover:text-text-primary border-border hover:bg-surface-500'
+                                }`}
                                 title="Copiar enlace"
+                                aria-label="Copiar enlace"
                               >
                                 {isCopied ? <Check size={14} /> : <Copy size={14} />}
                               </button>
                             </div>
                           </div>
                         ) : (
-                          <button 
-                            onClick={generateShareLink} 
-                            className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-left hover:bg-emerald-500/10 text-emerald-400 transition-colors group cursor-pointer"
+                          <button
+                            onClick={generateShareLink}
+                            className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-left hover:bg-surface-600 text-text-secondary hover:text-text-primary transition-colors group cursor-pointer"
                           >
-                            <div className="w-7 h-7 rounded bg-emerald-500/10 text-emerald-400 flex items-center justify-center border border-emerald-500/20 shrink-0">
+                            <div className="w-7 h-7 rounded bg-surface-800 flex items-center justify-center border border-border shrink-0 group-hover:text-accent-400 transition-colors">
                               <Link2 size={14} />
                             </div>
                             <div className="flex flex-col min-w-0">
