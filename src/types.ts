@@ -119,6 +119,8 @@ declare global {
         close: () => void;
         setHeaderColor: (color: string) => void;
         setBackgroundColor: (color: string) => void;
+        enableClosingConfirmation?: () => void;
+        disableClosingConfirmation?: () => void;
         themeParams: {
           bg_color?: string;
           text_color?: string;

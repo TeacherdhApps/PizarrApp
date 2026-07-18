@@ -824,7 +824,7 @@ function App() {
 
   const hasUnsavedChanges = lastSavedJson !== '' && lastSavedJson !== JSON.stringify(getCurrentTacticData())
 
-  // Prevent exiting/closing without saving
+  // Prevent exiting/closing without saving (Desktop / Tab close)
   useEffect(() => {
     const handleBeforeUnload = (e: BeforeUnloadEvent) => {
       if (hasUnsavedChanges) {
@@ -836,6 +836,48 @@ function App() {
     window.addEventListener('beforeunload', handleBeforeUnload)
     return () => {
       window.removeEventListener('beforeunload', handleBeforeUnload)
+    }
+  }, [hasUnsavedChanges])
+
+  // Intercept mobile PWA Back gesture/button to prevent unsaved exit
+  useEffect(() => {
+    if (!hasUnsavedChanges) return
+
+    // Push a dummy state so back actions trigger popstate instead of exiting the PWA
+    window.history.pushState({ preventExit: true }, '')
+
+    const handlePopState = () => {
+      if (hasUnsavedChanges) {
+        const confirmExit = window.confirm("Tienes cambios sin guardar. ¿Seguro que deseas salir?")
+        if (!confirmExit) {
+          // Push the state back to keep the user on the page
+          window.history.pushState({ preventExit: true }, '')
+        } else {
+          // Allow exit by popping the history once more
+          window.history.back()
+        }
+      }
+    }
+
+    window.addEventListener('popstate', handlePopState)
+    return () => {
+      window.removeEventListener('popstate', handlePopState)
+      // Clean up the dummy history state if the app was saved/cleaned
+      if (window.history.state?.preventExit) {
+        window.history.back()
+      }
+    }
+  }, [hasUnsavedChanges])
+
+  // Prevent closing in Telegram Mini App context
+  useEffect(() => {
+    if (window.Telegram?.WebApp) {
+      const tg = window.Telegram.WebApp
+      if (hasUnsavedChanges) {
+        tg.enableClosingConfirmation?.()
+      } else {
+        tg.disableClosingConfirmation?.()
+      }
     }
   }, [hasUnsavedChanges])
 
